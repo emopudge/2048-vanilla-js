@@ -4,7 +4,7 @@
   --surface: rgba(19, 22, 27, 0.82);
   --line: rgba(247, 241, 223, 0.14);
   --board-gap: 12px;
-  --board-size: min(68vh, 620px, calc(100vw - 280px));
+  --board-size: min(calc(100vh - 270px), 660px, calc(100vw - 250px));
 }
 
 * {
@@ -17,8 +17,44 @@ body {
   color: var(--ink);
   font-family: "Trebuchet MS", Arial, sans-serif;
   background:
-    linear-gradient(135deg, rgba(9, 11, 14, 0.92), rgba(82, 48, 29, 0.72)),
+    var(--theme-backdrop, linear-gradient(135deg, rgba(9, 11, 14, 0.92), rgba(82, 48, 29, 0.72))),
     #17191d;
+  background-size: cover;
+  background-position: center;
+  transition: background 700ms ease;
+  overflow-x: hidden;
+}
+
+body.theme-la-la-land {
+  --theme-backdrop: linear-gradient(135deg, rgba(45, 65, 128, 0.86), rgba(241, 123, 92, 0.7));
+}
+
+body.theme-blade-runner-2049 {
+  --theme-backdrop: linear-gradient(135deg, rgba(234, 134, 58, 0.72), rgba(24, 73, 103, 0.9));
+}
+
+body.theme-drive {
+  --theme-backdrop: linear-gradient(135deg, rgba(10, 32, 61, 0.9), rgba(225, 47, 58, 0.72));
+}
+
+body.theme-crazy-love {
+  --theme-backdrop: linear-gradient(135deg, rgba(88, 17, 46, 0.88), rgba(219, 135, 96, 0.7));
+}
+
+body.theme-only-god-forgives {
+  --theme-backdrop: linear-gradient(135deg, rgba(12, 19, 33, 0.92), rgba(157, 24, 43, 0.72));
+}
+
+body.theme-place-beyond-the-pines {
+  --theme-backdrop: linear-gradient(135deg, rgba(15, 36, 30, 0.92), rgba(154, 122, 73, 0.68));
+}
+
+body.theme-first-man {
+  --theme-backdrop: linear-gradient(135deg, rgba(7, 10, 15, 0.94), rgba(86, 98, 111, 0.72));
+}
+
+body.theme-barbie {
+  --theme-backdrop: linear-gradient(135deg, rgba(255, 105, 180, 0.82), rgba(255, 199, 235, 0.62));
 }
 
 button,
@@ -39,7 +75,7 @@ button:disabled {
   width: min(1040px, calc(100% - 32px));
   min-height: 100vh;
   margin: 0 auto;
-  padding: 34px 0;
+  padding: 6px 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -49,7 +85,7 @@ button:disabled {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 5px;
 }
 
 .eyebrow {
@@ -70,7 +106,7 @@ h2 {
 
 h1 {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(4rem, 10vw, 7.4rem);
+  font-size: clamp(3rem, 7vw, 5rem);
   letter-spacing: -0.08em;
 }
 
@@ -105,6 +141,107 @@ h2 {
   margin-top: 4px;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.8rem;
+}
+
+.theme-strip {
+  min-height: 44px;
+  margin-bottom: 5px;
+  padding: 5px 8px;
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(160px, 1.2fr) auto auto auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: rgba(12, 14, 17, 0.68);
+  backdrop-filter: blur(8px);
+}
+
+.theme-strip strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.92rem;
+}
+
+.game-guide {
+  width: min(320px, 100%);
+  margin-bottom: 4px;
+  padding: 0;
+  border-left: 2px solid #d0a76d;
+  background: rgba(12, 14, 17, 0.55);
+  color: var(--muted);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+
+.game-guide summary {
+  padding: 5px 9px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--ink);
+  font-weight: 700;
+  list-style-position: inside;
+}
+
+.game-guide:not([open]) {
+  margin-bottom: 0;
+}
+
+.game-guide span {
+  display: block;
+  padding: 0 9px 6px;
+}
+
+.theme-progress {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.theme-progress-track {
+  height: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-progress-track div {
+  width: 0;
+  height: 100%;
+  background: #d0a76d;
+  transition: width 500ms ease;
+}
+
+.sound-button {
+  min-height: 30px;
+  padding: 0 8px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.music-mode,
+.playlist-picker {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.music-mode select,
+.playlist-picker select {
+  min-height: 25px;
+  max-width: 132px;
+  border: 1px solid var(--line);
+  padding: 0 7px;
+  color: var(--ink);
+  background: #17191d;
+  font-size: 0.66rem;
+}
+
+.playlist-picker[hidden] {
+  display: none;
 }
 
 .game-layout {
@@ -171,18 +308,30 @@ h2 {
   left: calc(var(--column) * ((100% - 3 * var(--board-gap)) / 4 + var(--board-gap)));
   top: calc(var(--row) * ((100% - 3 * var(--board-gap)) / 4 + var(--board-gap)));
   display: grid;
-  place-items: center;
+  align-items: start;
+  justify-items: start;
+  padding: 7px 9px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.06);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.5rem, 5vw, 4.2rem);
+  color: #fff;
+  font-size: clamp(1rem, 2.4vw, 1.8rem);
   font-weight: 700;
   line-height: 1;
-  transition: left 180ms ease, top 180ms ease, background-color 140ms ease, color 140ms ease, transform 140ms ease;
+  transition: left 340ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    top 340ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    background-color 180ms ease, color 180ms ease, transform 220ms ease;
 }
 
 .tile[data-value] {
   transform: scale(1);
+}
+
+.tile.tile-with-image {
+  background-size: cover;
+  background-position: center;
+  color: #fff !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.88);
 }
 
 .tile-entering {
@@ -340,6 +489,36 @@ th {
     --board-size: min(calc(100vw - 32px), calc(100svh - 310px), 520px);
   }
 
+  .theme-strip {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+
+  .theme-progress {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .sound-button {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .music-mode {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .playlist-picker {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .music-mode select,
+  .playlist-picker select {
+    max-width: 100%;
+  }
+
   .game-shell {
     width: calc(100% - 32px);
     min-height: 100svh;
@@ -351,6 +530,10 @@ th {
   .game-header {
     align-items: center;
     margin-bottom: 10px;
+  }
+
+  .game-guide {
+    line-height: 1.35;
   }
 
   h1 {
@@ -399,5 +582,19 @@ th {
 
   .modal-card {
     padding: 24px 18px;
+  }
+}
+
+@media (min-width: 761px) and (max-height: 820px) {
+  :root {
+    --board-size: min(calc(100vh - 240px), 600px, calc(100vw - 250px));
+  }
+
+  .game-shell {
+    padding: 4px 0;
+  }
+
+  h1 {
+    font-size: clamp(3.5rem, 8vw, 5.5rem);
   }
 }
