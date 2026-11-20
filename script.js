@@ -56,9 +56,9 @@ const themes = [
 ];
 
 const tileThemeImages = {
-  2: "assets/images/la-la-land.jpg",
-  4: "assets/images/la-la-land.jpg",
-  8: "assets/images/la-la-land.jpg",
+  2: "assets/images/la-la-land-2.jpg",
+  4: "assets/images/la-la-land-4.jpg",
+  8: "assets/images/la-la-land-8.jpg",
   16: "assets/images/blade-runner-2049.jpg",
   32: "assets/images/drive.jpg",
   64: "assets/images/crazy-stupid-love.jpg",
@@ -266,7 +266,16 @@ function applyTileImage(tile, value) {
   if (!imageCache.has(imageSource)) {
     const image = new Image();
     image.src = imageSource;
+    image.onerror = () => {
+      imageCache.set(imageSource, false);
+      const fallbackSource = "assets/images/la-la-land.jpg";
+      tile.style.backgroundImage = `linear-gradient(rgba(8, 10, 13, 0.12), rgba(8, 10, 13, 0.36)), url("${fallbackSource}")`;
+    };
+    image.onload = () => imageCache.set(imageSource, true);
     imageCache.set(imageSource, image);
+  } else if (imageCache.get(imageSource) === false) {
+    const fallbackSource = "assets/images/la-la-land.jpg";
+    tile.style.backgroundImage = `linear-gradient(rgba(8, 10, 13, 0.12), rgba(8, 10, 13, 0.36)), url("${fallbackSource}")`;
   }
 }
 
@@ -386,7 +395,52 @@ function saveScore() {
   renderLeaderboard();
 }
 
-function renderBoard(previousBoard = null) {
+function getAnimationSource(rowIndex, columnIndex, value, previousBoard, direction, consumedSources) {
+  if (!previousBoard || !direction) {
+    return null;
+  }
+
+  const candidates = [];
+  const addCandidate = (row, column) => {
+    if (row >= 0 && row < SIZE && column >= 0 && column < SIZE) {
+      candidates.push([row, column]);
+    }
+  };
+
+  if (direction === "left") {
+    for (let column = columnIndex + 1; column < SIZE; column += 1) {
+      addCandidate(rowIndex, column);
+    }
+  } else if (direction === "right") {
+    for (let column = columnIndex - 1; column >= 0; column -= 1) {
+      addCandidate(rowIndex, column);
+    }
+  } else if (direction === "up") {
+    for (let row = rowIndex + 1; row < SIZE; row += 1) {
+      addCandidate(row, columnIndex);
+    }
+  } else if (direction === "down") {
+    for (let row = rowIndex - 1; row >= 0; row -= 1) {
+      addCandidate(row, columnIndex);
+    }
+  }
+
+  const source = candidates.find(([row, column]) => {
+    const sourceKey = `${row}-${column}`;
+    const sourceValue = previousBoard[row][column];
+    return !consumedSources.has(sourceKey)
+      && (sourceValue === value || sourceValue === value / 2);
+  });
+
+  if (!source) {
+    return null;
+  }
+
+  consumedSources.add(`${source[0]}-${source[1]}`);
+  return source;
+}
+
+function renderBoard(previousBoard = null, direction = null) {
   const fragment = document.createDocumentFragment();
   const consumedSources = new Set();
   let tileLayer = boardElement.querySelector(".tile-layer-active")
@@ -438,27 +492,18 @@ function renderBoard(previousBoard = null) {
       let sourceColumn = columnIndex;
       let shouldAnimate = false;
 
-      if (previousBoard) {
-        if (previousBoard[rowIndex][columnIndex] === value) {
-          shouldAnimate = true;
-        } else {
-          for (let oldRow = 0; oldRow < SIZE && !shouldAnimate; oldRow += 1) {
-            for (let oldColumn = 0; oldColumn < SIZE; oldColumn += 1) {
-              const sourceKey = `${oldRow}-${oldColumn}`;
-              const oldValue = previousBoard[oldRow][oldColumn];
-              const isMergeSource = value > 2 && oldValue === value / 2;
-              const isMovedSource = oldValue === value;
+      const source = getAnimationSource(
+        rowIndex,
+        columnIndex,
+        value,
+        previousBoard,
+        direction,
+        consumedSources
+      );
 
-              if (!consumedSources.has(sourceKey) && (isMergeSource || isMovedSource)) {
-                consumedSources.add(sourceKey);
-                sourceRow = oldRow;
-                sourceColumn = oldColumn;
-                shouldAnimate = oldRow !== rowIndex || oldColumn !== columnIndex;
-                break;
-              }
-            }
-          }
-        }
+      if (source) {
+        [sourceRow, sourceColumn] = source;
+        shouldAnimate = true;
       }
 
       tile.style.setProperty("--row", shouldAnimate ? sourceRow : rowIndex);
@@ -603,7 +648,7 @@ function move(direction) {
   };
   score += gainedScore;
   addRandomTile();
-  renderBoard(JSON.parse(previousBoard));
+  renderBoard(JSON.parse(previousBoard), direction);
   updateTheme();
   updateScore();
   saveGameState();
