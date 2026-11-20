@@ -597,6 +597,48 @@ function getAnimationSource(rowIndex, columnIndex, value, previousBoard, directi
   return source;
 }
 
+function getMergeSources(rowIndex, columnIndex, value, previousBoard, direction) {
+  if (!previousBoard || value < 4) {
+    return [];
+  }
+
+  const sources = [];
+
+  if (direction === "left" || direction === "right") {
+    for (let column = 0; column < SIZE; column += 1) {
+      if (previousBoard[rowIndex][column] === value / 2) {
+        sources.push([rowIndex, column]);
+      }
+    }
+  } else {
+    for (let row = 0; row < SIZE; row += 1) {
+      if (previousBoard[row][columnIndex] === value / 2) {
+        sources.push([row, columnIndex]);
+      }
+    }
+  }
+
+  if (direction === "left" || direction === "up") {
+    sources.sort((a, b) => (direction === "left" ? a[1] - b[1] : a[0] - b[0]));
+  } else {
+    sources.sort((a, b) => (direction === "right" ? b[1] - a[1] : b[0] - a[0]));
+  }
+
+  const orderedSources = sources.slice(0, 2);
+  const destinationDistance = orderedSources.map(([row, column]) => (
+    direction === "left" ? column - columnIndex
+      : direction === "right" ? columnIndex - column
+        : direction === "up" ? row - rowIndex
+          : rowIndex - row
+  ));
+
+  if (destinationDistance.some((distance) => distance < 0)) {
+    return [];
+  }
+
+  return orderedSources;
+}
+
 function renderBoard(previousBoard = null, direction = null) {
   const fragment = document.createDocumentFragment();
   const consumedSources = new Set();
@@ -636,18 +678,10 @@ function renderBoard(previousBoard = null, direction = null) {
         return;
       }
 
-      const tile = document.createElement("div");
-      tile.className = "tile";
-      tile.setAttribute("role", "gridcell");
-      tile.textContent = value;
-      tile.dataset.value = value;
-      tile.dataset.row = rowIndex;
-      tile.dataset.column = columnIndex;
-      tile.setAttribute("aria-label", `Плитка ${value}`);
-
       let sourceRow = rowIndex;
       let sourceColumn = columnIndex;
       let shouldAnimate = false;
+      let mergingValue = null;
 
       const source = getAnimationSource(
         rowIndex,
@@ -661,7 +695,21 @@ function renderBoard(previousBoard = null, direction = null) {
       if (source) {
         [sourceRow, sourceColumn] = source;
         shouldAnimate = sourceRow !== rowIndex || sourceColumn !== columnIndex;
+        const sourceValue = previousBoard[sourceRow][sourceColumn];
+
+        if (shouldAnimate && sourceValue === value / 2) {
+          mergingValue = value;
+        }
       }
+
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.setAttribute("role", "gridcell");
+      tile.textContent = mergingValue ? mergingValue / 2 : value;
+      tile.dataset.value = value;
+      tile.dataset.row = rowIndex;
+      tile.dataset.column = columnIndex;
+      tile.setAttribute("aria-label", `Плитка ${value}`);
 
       tile.style.setProperty("--row", shouldAnimate ? sourceRow : rowIndex);
       tile.style.setProperty("--column", shouldAnimate ? sourceColumn : columnIndex);
@@ -669,10 +717,14 @@ function renderBoard(previousBoard = null, direction = null) {
       const [background, color] = tileColors[value] || ["#3c3a32", "#f9f6f2"];
       tile.style.backgroundColor = background;
       tile.style.color = color;
-      applyTileImage(tile, value);
+      applyTileImage(tile, mergingValue ? mergingValue / 2 : value);
 
       if (shouldAnimate) {
         tile.classList.add("tile-moving");
+        if (mergingValue) {
+          tile.classList.add("tile-merging");
+          tile.dataset.mergeValue = String(mergingValue);
+        }
       } else if (!previousBoard || previousBoard[rowIndex][columnIndex] === 0) {
         tile.classList.add("tile-entering");
       }
@@ -701,6 +753,19 @@ function renderBoard(previousBoard = null, direction = null) {
                 tile.style.setProperty("--row", rowIndex);
                 tile.style.setProperty("--column", columnIndex);
                 tile.classList.remove("tile-moving");
+
+                if (tile.dataset.mergeValue) {
+                  const mergeValue = Number(tile.dataset.mergeValue);
+
+                  window.setTimeout(() => {
+                    tile.textContent = String(mergeValue);
+                    tile.dataset.value = String(mergeValue);
+                    tile.setAttribute("aria-label", `Плитка ${mergeValue}`);
+                    applyTileImage(tile, mergeValue);
+                    tile.classList.add("tile-merge-complete");
+                    tile.classList.remove("tile-merging");
+                  }, 360);
+                }
               }
             }
           });
