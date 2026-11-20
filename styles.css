@@ -471,7 +471,28 @@ h2 {
   }
   50% {
     filter: brightness(1.04);
-    transform: scale(1.025);
+    transform: scale(1.015);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+.tile-new-value {
+  animation: new-value-glow 900ms ease-out;
+  box-shadow: 0 0 0 2px rgba(174, 255, 214, 0.72),
+    0 0 18px rgba(174, 255, 214, 0.42);
+}
+
+@keyframes new-value-glow {
+  0% {
+    filter: brightness(1.28) saturate(1.12);
+    transform: scale(1.06);
+  }
+  55% {
+    filter: brightness(1.12);
+    transform: scale(1.02);
   }
   100% {
     filter: brightness(1);

@@ -37,6 +37,7 @@ const MUSIC_MODE_KEY = "gosling-2048-music-mode";
 const PLAYLIST_TRACK_KEY = "gosling-2048-playlist-track";
 const MUSIC_POSITION_KEY = "gosling-2048-music-position";
 const MUSIC_PAUSED_KEY = "gosling-2048-music-paused";
+const DISCOVERED_VALUES_KEY = "gosling-2048-discovered-values";
 let board = [];
 let score = 0;
 let gameOver = false;
@@ -47,6 +48,7 @@ let musicMode = localStorage.getItem(MUSIC_MODE_KEY) || "themes";
 let playlistTrack = localStorage.getItem(PLAYLIST_TRACK_KEY) || "la-la-land";
 let audioPaused = localStorage.getItem(MUSIC_PAUSED_KEY) === "true";
 let audioFadeToken = 0;
+let discoveredValues = new Set([2]);
 
 const themes = [
   { title: "Ла-Ла Ленд", threshold: 2, className: "theme-la-la-land", audio: "assets/audio/la-la-land.mp3" },
@@ -467,6 +469,36 @@ function getSavedGameState() {
   return parsedState;
 }
 
+function loadDiscoveredValues() {
+  try {
+    const savedValues = JSON.parse(localStorage.getItem(DISCOVERED_VALUES_KEY) || "[2]");
+    discoveredValues = new Set(Array.isArray(savedValues) ? savedValues : [2]);
+  } catch {
+    discoveredValues = new Set([2]);
+  }
+
+  board.flat().forEach((value) => {
+    if (value) {
+      discoveredValues.add(value);
+    }
+  });
+}
+
+function rememberDiscoveredValues(values) {
+  let changed = false;
+
+  values.forEach((value) => {
+    if (value && !discoveredValues.has(value)) {
+      discoveredValues.add(value);
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    localStorage.setItem(DISCOVERED_VALUES_KEY, JSON.stringify([...discoveredValues]));
+  }
+}
+
 function getLeaderboard() {
   const savedLeaderboard = localStorage.getItem(LEADERBOARD_KEY);
 
@@ -555,7 +587,9 @@ function getAnimationSource(rowIndex, columnIndex, value, previousBoard, directi
     });
 
     if (source) {
-      consumedSources.add(`${source[0]}-${source[1]}`);
+      merge.sources.forEach(([row, column]) => {
+        consumedSources.add(`${row}-${column}`);
+      });
       return source;
     }
   }
@@ -714,7 +748,7 @@ function getMergeSources(rowIndex, columnIndex, value, previousBoard, direction)
   return orderedSources;
 }
 
-function renderBoard(previousBoard = null, direction = null) {
+function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValues = new Set()) {
   const fragment = document.createDocumentFragment();
   const consumedSources = new Set();
   const mergePlan = previousBoard ? buildMergePlan(previousBoard, direction) : new Map();
@@ -758,36 +792,35 @@ function renderBoard(previousBoard = null, direction = null) {
       let sourceColumn = columnIndex;
       let shouldAnimate = false;
       let mergingValue = null;
-
-      const source = getAnimationSource(
-        rowIndex,
-        columnIndex,
-        value,
-        previousBoard,
-        direction,
-        consumedSources,
-        mergePlan
-      );
-
-      if (source) {
-        [sourceRow, sourceColumn] = source;
-        shouldAnimate = sourceRow !== rowIndex || sourceColumn !== columnIndex;
-        const sourceValue = previousBoard[sourceRow][sourceColumn];
-
-        if (shouldAnimate && sourceValue === value / 2) {
-          mergingValue = value;
-        }
-      }
-
       const targetMerge = mergePlan.get(`${rowIndex}-${columnIndex}`);
+
       if (targetMerge) {
         mergingValue = targetMerge.value;
+        [sourceRow, sourceColumn] = targetMerge.sources[0];
+        shouldAnimate = sourceRow !== rowIndex || sourceColumn !== columnIndex;
+      } else {
+        const source = getAnimationSource(
+          rowIndex,
+          columnIndex,
+          value,
+          previousBoard,
+          direction,
+          consumedSources,
+          mergePlan
+        );
+        if (!source) {
+          sourceRow = rowIndex;
+          sourceColumn = columnIndex;
+        } else {
+        [sourceRow, sourceColumn] = source;
+        shouldAnimate = sourceRow !== rowIndex || sourceColumn !== columnIndex;
+        }
       }
 
       const tile = document.createElement("div");
       tile.className = "tile";
       tile.setAttribute("role", "gridcell");
-      tile.textContent = mergingValue ? mergingValue / 2 : value;
+      tile.textContent = mergingValue || value;
       tile.dataset.value = value;
       tile.dataset.row = rowIndex;
       tile.dataset.column = columnIndex;
@@ -799,16 +832,19 @@ function renderBoard(previousBoard = null, direction = null) {
       const [background, color] = tileColors[value] || ["#3c3a32", "#f9f6f2"];
       tile.style.backgroundColor = background;
       tile.style.color = color;
-      applyTileImage(tile, mergingValue ? mergingValue / 2 : value);
+      applyTileImage(tile, mergingValue || value);
 
       if (shouldAnimate) {
         tile.classList.add("tile-moving");
         if (mergingValue) {
           tile.classList.add("tile-merging");
-          tile.dataset.mergeValue = String(mergingValue);
+          tile.dataset.mergeTarget = "true";
         }
       } else if (!previousBoard || previousBoard[rowIndex][columnIndex] === 0) {
         tile.classList.add("tile-entering");
+      }
+      if (newlyDiscoveredValues.has(value)) {
+        tile.classList.add("tile-new-value");
       }
       fragment.appendChild(tile);
     });
@@ -866,18 +902,9 @@ function renderBoard(previousBoard = null, direction = null) {
                 tile.style.setProperty("--row", rowIndex);
                 tile.style.setProperty("--column", columnIndex);
                 tile.classList.remove("tile-moving");
-
-                if (tile.dataset.mergeValue) {
-                  const mergeValue = Number(tile.dataset.mergeValue);
-
-                  window.setTimeout(() => {
-                    tile.textContent = String(mergeValue);
-                    tile.dataset.value = String(mergeValue);
-                    tile.setAttribute("aria-label", `Плитка ${mergeValue}`);
-                    applyTileImage(tile, mergeValue);
-                    tile.classList.add("tile-merge-complete");
-                    tile.classList.remove("tile-merging");
-                  }, 360);
+                if (tile.dataset.mergeTarget === "true") {
+                  tile.classList.add("tile-merge-complete");
+                  tile.classList.remove("tile-merging");
                 }
               }
             }
@@ -905,11 +932,13 @@ function addRandomTile() {
   });
 
   if (emptyCells.length === 0) {
-    return;
+    return null;
   }
 
   const [row, column] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-  board[row][column] = Math.random() < 0.9 ? 2 : 4;
+  const value = Math.random() < 0.9 ? 2 : 4;
+  board[row][column] = value;
+  return [row, column, value];
 }
 
 function slideLine(line) {
@@ -982,8 +1011,20 @@ function move(direction) {
     score,
   };
   score += gainedScore;
+  const newlyDiscoveredValues = new Set();
+  board.flat().forEach((value) => {
+    if (value && !discoveredValues.has(value)) {
+      newlyDiscoveredValues.add(value);
+    }
+  });
   addRandomTile();
-  renderBoard(JSON.parse(previousBoard), direction);
+  board.flat().forEach((value) => {
+    if (value && !discoveredValues.has(value)) {
+      newlyDiscoveredValues.add(value);
+    }
+  });
+  rememberDiscoveredValues(newlyDiscoveredValues);
+  renderBoard(JSON.parse(previousBoard), direction, newlyDiscoveredValues);
   updateTheme();
   updateScore();
   saveGameState();
@@ -1044,6 +1085,7 @@ function startNewGame() {
   gameOver = false;
   previousState = null;
   scoreSaved = false;
+  loadDiscoveredValues();
   gameOverModal.hidden = true;
   mobileControls.hidden = gameOver;
   addRandomTile();
@@ -1172,6 +1214,7 @@ if (savedGameState) {
   board = savedGameState.board;
   score = savedGameState.score;
   gameOver = Boolean(savedGameState.gameOver);
+  loadDiscoveredValues();
   mobileControls.hidden = gameOver;
   renderBoard();
   updateTheme();
