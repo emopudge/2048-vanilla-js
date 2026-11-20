@@ -858,8 +858,8 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         const duplicate = document.createElement("div");
         duplicate.className = "tile tile-moving tile-merging";
         duplicate.setAttribute("role", "gridcell");
-        duplicate.textContent = String(merge.value / 2);
-        duplicate.dataset.value = String(merge.value / 2);
+        duplicate.textContent = String(merge.value);
+        duplicate.dataset.value = String(merge.value);
         duplicate.dataset.row = targetRow;
         duplicate.dataset.column = targetColumn;
         duplicate.dataset.sourceRow = sourceRow;
@@ -868,7 +868,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         duplicate.style.setProperty("--row", sourceRow);
         duplicate.style.setProperty("--column", sourceColumn);
         duplicate.style.zIndex = "20";
-        applyTileImage(duplicate, merge.value / 2);
+        applyTileImage(duplicate, merge.value);
         fragment.appendChild(duplicate);
       });
     });
@@ -887,8 +887,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         tileLayer.querySelectorAll(".tile[data-source-row]").forEach((duplicate) => {
           duplicate.style.setProperty("--row", duplicate.dataset.row);
           duplicate.style.setProperty("--column", duplicate.dataset.column);
-
-          window.setTimeout(() => duplicate.remove(), 420);
+          duplicate.addEventListener("transitionend", () => duplicate.remove(), { once: true });
         });
 
         board.forEach((row, rowIndex) => {
@@ -909,11 +908,6 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
               }
             }
           });
-
-          window.setTimeout(() => {
-            const oldLayers = boardElement.querySelectorAll(".tile-layer:not(.tile-layer-active)");
-            oldLayers.forEach((layer) => layer.remove());
-          }, 520);
         });
       });
     });
