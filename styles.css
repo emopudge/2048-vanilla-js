@@ -22,12 +22,27 @@ body {
 
 .theme-backdrop {
   position: fixed;
-  z-index: -1;
+  z-index: -2;
   inset: 0;
   background: linear-gradient(135deg, rgba(45, 65, 128, 0.86), rgba(241, 123, 92, 0.7));
   background-size: cover;
   background-position: center;
-  transition: opacity 500ms ease, background 500ms ease;
+  transition: opacity 800ms ease, background 800ms ease;
+}
+
+.theme-backdrop-next {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  opacity: 0;
+  background: #17191d;
+  background-size: cover;
+  background-position: center;
+  transition: opacity 800ms ease;
+}
+
+.theme-backdrop-next.is-visible {
+  opacity: 1;
 }
 
 .theme-backdrop.theme-la-la-land,
@@ -131,6 +146,10 @@ button:disabled {
   align-items: flex-end;
   justify-content: space-between;
   margin-bottom: 5px;
+  padding: 8px 14px 9px;
+  border: 1px solid rgba(247, 241, 223, 0.08);
+  background: rgba(18, 20, 24, 0.72);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
 }
 
 .eyebrow {
@@ -199,6 +218,7 @@ h2 {
   border: 1px solid var(--line);
   background: rgba(12, 14, 17, 0.68);
   backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
 }
 
 .theme-strip strong {
@@ -258,10 +278,13 @@ h2 {
 }
 
 .sound-button {
-  min-height: 30px;
-  padding: 0 8px;
-  font-size: 0.72rem;
-  white-space: nowrap;
+  width: 38px;
+  min-height: 38px;
+  min-width: 38px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  line-height: 1;
 }
 
 .music-inline {
@@ -332,17 +355,21 @@ h2 {
 
 .action-button,
 .save-score button {
-  min-height: 44px;
+  min-height: 40px;
   border: 1px solid var(--line);
   color: var(--ink);
-  background: rgba(20, 22, 24, 0.92);
+  background: rgba(20, 22, 24, 0.84);
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0;
   transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
 }
 
 .action-button:hover,
 .save-score button:hover {
   border-color: #d0a76d;
-  background: #2b2520;
+  background: rgba(43, 37, 32, 0.94);
   transform: translateY(-1px);
 }
 
@@ -544,10 +571,17 @@ th {
 }
 
 .mobile-controls button {
+  width: 46px;
+  height: 46px;
+  padding: 0;
   border: 1px solid var(--line);
+  border-radius: 2px;
   color: var(--ink);
   background: var(--surface);
-  font-size: 1.4rem;
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 500;
+  transition: border-color 180ms ease, background 180ms ease;
 }
 
 .mobile-controls button[data-direction="up"] {
