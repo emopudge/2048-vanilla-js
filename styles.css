@@ -230,8 +230,8 @@ h2 {
 .game-guide {
   position: absolute;
   z-index: 10;
-  top: 0;
-  left: -62px;
+  top: 218px;
+  left: 0;
   width: 220px;
   margin: 0;
   padding: 0;
@@ -658,17 +658,6 @@ th {
 .mobile-controls button[data-direction="right"] {
   grid-row: 2;
   grid-column: 3;
-}
-
-@media (min-width: 761px) and (max-width: 820px) {
-  .game-guide {
-    position: fixed;
-    top: auto;
-    right: auto;
-    bottom: 16px;
-    left: 16px;
-    width: min(220px, calc(100% - 32px));
-  }
 }
 
 @media (max-width: 760px) {
