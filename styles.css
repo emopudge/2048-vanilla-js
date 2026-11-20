@@ -164,6 +164,11 @@ h2 {
   font-size: clamp(1.5rem, 5vw, 4.2rem);
   font-weight: 700;
   line-height: 1;
+  transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.tile[data-value] {
+  transform: scale(1.02);
 }
 
 .modal-backdrop {
