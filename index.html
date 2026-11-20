@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="theme-backdrop theme-la-la-land" data-theme="theme-la-la-land" aria-hidden="true"></div>
   <main class="game-shell">
     <header class="game-header">
       <div>
@@ -64,6 +65,14 @@
     </details>
 
     <audio id="theme-audio" preload="auto"></audio>
+    <section class="music-player" aria-label="Плеер">
+      <div class="music-track-info">
+        <span>Сейчас играет</span>
+        <strong id="music-track-title">Ла-Ла Ленд</strong>
+      </div>
+      <input id="music-progress" type="range" min="0" max="0" value="0" step="1" aria-label="Перемотка песни">
+      <span class="music-time" id="music-time">0:00 / 0:00</span>
+    </section>
 
     <section class="game-layout">
       <aside class="game-actions" aria-label="Действия игры">

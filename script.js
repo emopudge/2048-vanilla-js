@@ -22,6 +22,9 @@ const themeAudio = document.querySelector("#theme-audio");
 const musicModeSelect = document.querySelector("#music-mode");
 const playlistPicker = document.querySelector("#playlist-picker");
 const playlistTrackSelect = document.querySelector("#playlist-track");
+const musicTrackTitle = document.querySelector("#music-track-title");
+const musicProgress = document.querySelector("#music-progress");
+const musicTime = document.querySelector("#music-time");
 const imageCache = new Map();
 
 const SIZE = 4;
@@ -80,6 +83,17 @@ const playlistTracks = {
   barbie: "assets/audio/barbie.mp3",
 };
 
+const trackTitles = {
+  "la-la-land": "Ла-Ла Ленд",
+  "blade-runner-2049": "Бегущий по лезвию 2049",
+  drive: "Драйв",
+  "crazy-stupid-love": "Эта дурацкая любовь",
+  "only-god-forgives": "Только бог простит",
+  "the-place-beyond-the-pines": "Место под соснами",
+  "first-man": "Первый человек",
+  barbie: "Барби",
+};
+
 const tileColors = {
   2: ["#eee4da", "#776e65"],
   4: ["#ede0c8", "#776e65"],
@@ -127,6 +141,7 @@ function updateTheme() {
 
   document.body.classList.remove(...themes.map((theme) => theme.className));
   document.body.classList.add(activeTheme.className);
+  updateBackdrop(activeTheme.className);
   currentThemeElement.textContent = activeTheme.title;
   localStorage.setItem(THEME_KEY, activeTheme.className);
 
@@ -146,6 +161,7 @@ function updateTheme() {
     ? playlistTracks[playlistTrack]
     : activeTheme.audio;
 
+  updateTrackTitle();
   applyMusicSource(nextSource);
 }
 
@@ -159,6 +175,26 @@ function updateMusicControls() {
   musicModeSelect.value = musicMode;
   playlistTrackSelect.value = playlistTrack;
   playlistPicker.hidden = musicMode !== "playlist";
+}
+
+function updateTrackTitle() {
+  const activeTheme = getActiveTheme();
+  const trackKey = musicMode === "playlist"
+    ? playlistTrack
+    : activeTheme.className.replace("theme-", "");
+
+  musicTrackTitle.textContent = trackTitles[trackKey] || activeTheme.title;
+}
+
+function updateBackdrop(themeClass) {
+  const backdrop = document.querySelector(".theme-backdrop");
+
+  if (!backdrop || backdrop.dataset.theme === themeClass) {
+    return;
+  }
+
+  backdrop.className = `theme-backdrop ${themeClass}`;
+  backdrop.dataset.theme = themeClass;
 }
 
 function setMusicSource({ startPlayback = false } = {}) {
@@ -233,6 +269,22 @@ function applyMusicSource(nextSource, startPlayback = false) {
   themeAudio.load();
 }
 
+function formatTime(seconds) {
+  if (!Number.isFinite(seconds)) {
+    return "0:00";
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${remainingSeconds}`;
+}
+
+function updateMusicProgress() {
+  musicProgress.max = Number.isFinite(themeAudio.duration) ? themeAudio.duration : 0;
+  musicProgress.value = themeAudio.currentTime;
+  musicTime.textContent = `${formatTime(themeAudio.currentTime)} / ${formatTime(themeAudio.duration)}`;
+}
+
 themeAudio.addEventListener("ended", () => {
   if (musicMode !== "playlist") {
     return;
@@ -247,9 +299,20 @@ themeAudio.addEventListener("ended", () => {
 });
 
 themeAudio.addEventListener("timeupdate", () => {
+  updateMusicProgress();
+
   if (Math.floor(themeAudio.currentTime) % 5 === 0) {
     rememberMusicPosition();
   }
+});
+
+themeAudio.addEventListener("loadedmetadata", updateMusicProgress);
+themeAudio.addEventListener("durationchange", updateMusicProgress);
+
+musicProgress.addEventListener("input", () => {
+  themeAudio.currentTime = Number(musicProgress.value);
+  rememberMusicPosition();
+  updateMusicProgress();
 });
 
 function applyTileImage(tile, value) {
@@ -822,7 +885,8 @@ musicModeSelect.addEventListener("change", () => {
 playlistTrackSelect.addEventListener("change", () => {
   playlistTrack = playlistTrackSelect.value;
   localStorage.setItem(PLAYLIST_TRACK_KEY, playlistTrack);
-  setMusicSource();
+  updateTrackTitle();
+  setMusicSource({ startPlayback: soundEnabled && !audioPaused });
 });
 
 bestScoreElement.textContent = getBestScore();

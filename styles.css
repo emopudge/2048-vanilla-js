@@ -16,45 +16,90 @@ body {
   margin: 0;
   color: var(--ink);
   font-family: "Trebuchet MS", Arial, sans-serif;
-  background:
-    var(--theme-backdrop, linear-gradient(135deg, rgba(9, 11, 14, 0.92), rgba(82, 48, 29, 0.72))),
-    #17191d;
-  background-size: cover;
-  background-position: center;
-  transition: background 700ms ease;
+  background: #17191d;
   overflow-x: hidden;
 }
 
+.theme-backdrop {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(45, 65, 128, 0.86), rgba(241, 123, 92, 0.7));
+  background-size: cover;
+  background-position: center;
+  transition: opacity 500ms ease, background 500ms ease;
+}
+
+.theme-backdrop.theme-la-la-land,
 body.theme-la-la-land {
   --theme-backdrop: linear-gradient(135deg, rgba(45, 65, 128, 0.86), rgba(241, 123, 92, 0.7));
 }
 
+.theme-backdrop.theme-blade-runner-2049,
 body.theme-blade-runner-2049 {
   --theme-backdrop: linear-gradient(135deg, rgba(234, 134, 58, 0.72), rgba(24, 73, 103, 0.9));
 }
 
+.theme-backdrop.theme-drive,
 body.theme-drive {
   --theme-backdrop: linear-gradient(135deg, rgba(10, 32, 61, 0.9), rgba(225, 47, 58, 0.72));
 }
 
+.theme-backdrop.theme-crazy-love,
 body.theme-crazy-love {
   --theme-backdrop: linear-gradient(135deg, rgba(88, 17, 46, 0.88), rgba(219, 135, 96, 0.7));
 }
 
+.theme-backdrop.theme-only-god-forgives,
 body.theme-only-god-forgives {
   --theme-backdrop: linear-gradient(135deg, rgba(12, 19, 33, 0.92), rgba(157, 24, 43, 0.72));
 }
 
+.theme-backdrop.theme-place-beyond-the-pines,
 body.theme-place-beyond-the-pines {
   --theme-backdrop: linear-gradient(135deg, rgba(15, 36, 30, 0.92), rgba(154, 122, 73, 0.68));
 }
 
+.theme-backdrop.theme-first-man,
 body.theme-first-man {
   --theme-backdrop: linear-gradient(135deg, rgba(7, 10, 15, 0.94), rgba(86, 98, 111, 0.72));
 }
 
+.theme-backdrop.theme-barbie,
 body.theme-barbie {
   --theme-backdrop: linear-gradient(135deg, rgba(255, 105, 180, 0.82), rgba(255, 199, 235, 0.62));
+}
+
+.theme-backdrop.theme-la-la-land {
+  background: linear-gradient(135deg, rgba(45, 65, 128, 0.86), rgba(241, 123, 92, 0.7));
+}
+
+.theme-backdrop.theme-blade-runner-2049 {
+  background: linear-gradient(135deg, rgba(234, 134, 58, 0.72), rgba(24, 73, 103, 0.9));
+}
+
+.theme-backdrop.theme-drive {
+  background: linear-gradient(135deg, rgba(10, 32, 61, 0.9), rgba(225, 47, 58, 0.72));
+}
+
+.theme-backdrop.theme-crazy-love {
+  background: linear-gradient(135deg, rgba(88, 17, 46, 0.88), rgba(219, 135, 96, 0.7));
+}
+
+.theme-backdrop.theme-only-god-forgives {
+  background: linear-gradient(135deg, rgba(12, 19, 33, 0.92), rgba(157, 24, 43, 0.72));
+}
+
+.theme-backdrop.theme-place-beyond-the-pines {
+  background: linear-gradient(135deg, rgba(15, 36, 30, 0.92), rgba(154, 122, 73, 0.68));
+}
+
+.theme-backdrop.theme-first-man {
+  background: linear-gradient(135deg, rgba(7, 10, 15, 0.94), rgba(86, 98, 111, 0.72));
+}
+
+.theme-backdrop.theme-barbie {
+  background: linear-gradient(135deg, rgba(255, 105, 180, 0.82), rgba(255, 199, 235, 0.62));
 }
 
 button,
@@ -219,6 +264,49 @@ h2 {
   white-space: nowrap;
 }
 
+.music-player {
+  width: min(520px, 100%);
+  margin: 0 0 6px auto;
+  padding: 5px 8px;
+  display: grid;
+  grid-template-columns: minmax(130px, auto) 1fr auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: rgba(12, 14, 17, 0.58);
+}
+
+.music-track-info {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.music-track-info span {
+  color: var(--muted);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+
+.music-track-info strong {
+  overflow: hidden;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.music-player input[type="range"] {
+  width: 100%;
+  accent-color: #d0a76d;
+}
+
+.music-time {
+  color: var(--muted);
+  font-size: 0.64rem;
+  white-space: nowrap;
+}
+
 .music-mode,
 .playlist-picker {
   display: grid;
@@ -329,8 +417,8 @@ h2 {
   font-weight: 700;
   line-height: 1;
   will-change: left, top;
-  transition: left 480ms cubic-bezier(0.16, 1, 0.3, 1),
-    top 480ms cubic-bezier(0.16, 1, 0.3, 1),
+  transition: left 380ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    top 380ms cubic-bezier(0.22, 0.61, 0.36, 1),
     background-color 180ms ease, color 180ms ease, transform 220ms ease;
 }
 
@@ -351,7 +439,6 @@ h2 {
 
 .tile-moving {
   z-index: 3;
-  opacity: 0.96;
 }
 
 @keyframes tile-in {
@@ -512,6 +599,12 @@ th {
   .theme-progress {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+
+  .music-player {
+    width: 100%;
+    grid-template-columns: minmax(110px, auto) 1fr auto;
+    margin-bottom: 5px;
   }
 
   .sound-button {
