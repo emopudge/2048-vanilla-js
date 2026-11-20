@@ -228,12 +228,12 @@ h2 {
 }
 
 .game-guide {
-  position: absolute;
+  position: relative;
   z-index: 10;
-  top: 218px;
-  left: 0;
+  align-self: flex-start;
+  height: 29px;
   width: 220px;
-  margin: 0;
+  margin: 0 0 5px;
   padding: 0;
   border-left: 2px solid #d0a76d;
   background: rgba(12, 14, 17, 0.55);
@@ -257,8 +257,14 @@ h2 {
 }
 
 .game-guide span {
-  display: block;
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 0;
+  width: 220px;
   padding: 0 9px 6px;
+  border-left: 2px solid #d0a76d;
+  background: rgba(12, 14, 17, 0.88);
 }
 
 .theme-progress {
@@ -715,12 +721,9 @@ th {
   }
 
   .game-guide {
-    position: absolute;
-    top: auto;
-    right: 16px;
-    bottom: 16px;
-    left: auto;
-    width: min(290px, calc(100% - 32px));
+    align-self: flex-start;
+    width: 220px;
+    height: 29px;
     line-height: 1.35;
   }
 
