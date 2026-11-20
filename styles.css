@@ -689,10 +689,13 @@ th {
 
   :root {
     --board-gap: 8px;
-    --board-size: min(calc(100vw - 32px), calc(100svh - 430px), 520px);
+    --board-size: min(calc(100vw - 32px), calc(100svh - 340px), 520px);
   }
 
   .theme-strip {
+    position: relative;
+    z-index: 15;
+    margin-bottom: 6px;
     grid-template-columns: 1fr auto;
     gap: 8px;
   }
@@ -715,16 +718,19 @@ th {
   .music-mode {
     grid-column: 1;
     grid-row: 3;
+    width: 100%;
   }
 
   .playlist-picker {
     grid-column: 2;
     grid-row: 3;
+    width: 100%;
   }
 
   .music-mode select,
   .playlist-picker select {
-    max-width: 100%;
+    width: 100%;
+    max-width: none;
   }
 
   .game-shell {
@@ -764,6 +770,7 @@ th {
   .game-layout {
     grid-template-columns: 1fr;
     gap: 6px;
+    z-index: 1;
   }
 
   .game-actions {
