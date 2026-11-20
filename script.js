@@ -165,7 +165,7 @@ function updateTheme() {
     : activeTheme.audio;
 
   updateTrackTitle();
-  applyMusicSource(nextSource, false, themeChanged);
+  applyMusicSource(nextSource, false, musicMode === "themes" && themeChanged);
 }
 
 function updateSoundButton() {
@@ -303,11 +303,6 @@ function applyMusicSource(nextSource, startPlayback = false, resetPosition = fal
   if (!nextSource || themeAudio.dataset.source === nextSource) {
     if (resetPosition) {
       themeAudio.currentTime = 0;
-    } else if (musicMode === "playlist") {
-      const position = getMusicPositions()[nextSource];
-      if (Number.isFinite(position) && position < themeAudio.duration) {
-        themeAudio.currentTime = position;
-      }
     }
 
     if (startPlayback) {
