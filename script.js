@@ -22,6 +22,7 @@ const themeAudio = document.querySelector("#theme-audio");
 const musicModeSelect = document.querySelector("#music-mode");
 const playlistPicker = document.querySelector("#playlist-picker");
 const playlistTrackSelect = document.querySelector("#playlist-track");
+const imageCache = new Map();
 
 const SIZE = 4;
 const BEST_SCORE_KEY = "gosling-2048-best-score";
@@ -160,13 +161,13 @@ function updateMusicControls() {
   playlistPicker.hidden = musicMode !== "playlist";
 }
 
-function setMusicSource() {
+function setMusicSource({ startPlayback = false } = {}) {
   const activeTheme = getActiveTheme();
   const nextSource = musicMode === "playlist"
     ? playlistTracks[playlistTrack]
     : activeTheme.audio;
 
-  applyMusicSource(nextSource);
+  applyMusicSource(nextSource, startPlayback);
 }
 
 function getMusicPositions() {
@@ -190,10 +191,18 @@ function rememberMusicPosition() {
   localStorage.setItem(MUSIC_POSITION_KEY, JSON.stringify(positions));
 }
 
-function applyMusicSource(nextSource) {
+function applyMusicSource(nextSource, startPlayback = false) {
   themeAudio.loop = musicMode === "themes";
 
   if (!nextSource || themeAudio.dataset.source === nextSource) {
+    if (startPlayback) {
+      soundEnabled = true;
+      audioPaused = false;
+      localStorage.setItem(SOUND_KEY, "true");
+      localStorage.setItem(MUSIC_PAUSED_KEY, "false");
+      themeAudio.play().catch(() => {});
+      updateSoundButton();
+    }
     return;
   }
 
@@ -201,19 +210,27 @@ function applyMusicSource(nextSource) {
   themeAudio.src = nextSource;
   themeAudio.dataset.source = nextSource;
 
-  const restorePosition = () => {
+  let restored = false;
+  const playWhenReady = () => {
+    if (restored) {
+      return;
+    }
+
+    restored = true;
     const position = getMusicPositions()[nextSource];
 
     if (Number.isFinite(position) && position < themeAudio.duration) {
       themeAudio.currentTime = position;
     }
 
-    if (soundEnabled && !audioPaused) {
+    if (startPlayback || (soundEnabled && !audioPaused)) {
       themeAudio.play().catch(() => {});
     }
   };
 
-  themeAudio.addEventListener("loadedmetadata", restorePosition, { once: true });
+  themeAudio.addEventListener("loadedmetadata", playWhenReady, { once: true });
+  themeAudio.addEventListener("canplay", playWhenReady, { once: true });
+  themeAudio.load();
 }
 
 themeAudio.addEventListener("ended", () => {
@@ -242,12 +259,15 @@ function applyTileImage(tile, value) {
     return;
   }
 
-  const image = new Image();
-  image.onload = () => {
-    tile.style.backgroundImage = `linear-gradient(rgba(8, 10, 13, 0.12), rgba(8, 10, 13, 0.36)), url("${imageSource}")`;
-    tile.classList.add("tile-with-image");
-  };
-  image.src = imageSource;
+  const backgroundImage = `linear-gradient(rgba(8, 10, 13, 0.12), rgba(8, 10, 13, 0.36)), url("${imageSource}")`;
+  tile.style.backgroundImage = backgroundImage;
+  tile.classList.add("tile-with-image");
+
+  if (!imageCache.has(imageSource)) {
+    const image = new Image();
+    image.src = imageSource;
+    imageCache.set(imageSource, image);
+  }
 }
 
 function updateScore() {
@@ -369,14 +389,34 @@ function saveScore() {
 function renderBoard(previousBoard = null) {
   const fragment = document.createDocumentFragment();
   const consumedSources = new Set();
+  let tileLayer = boardElement.querySelector(".tile-layer-active")
+    || boardElement.querySelector(".tile-layer");
+  let previousLayer = null;
 
-  for (let index = 0; index < 16; index += 1) {
-    const cell = document.createElement("div");
-    cell.className = "board-cell";
-    cell.setAttribute("aria-hidden", "true");
-    cell.style.setProperty("--row", Math.floor(index / SIZE));
-    cell.style.setProperty("--column", index % SIZE);
-    fragment.appendChild(cell);
+  if (!tileLayer) {
+    tileLayer = document.createElement("div");
+    tileLayer.className = "tile-layer tile-layer-active";
+
+    for (let index = 0; index < 16; index += 1) {
+      const cell = document.createElement("div");
+      cell.className = "board-cell";
+      cell.setAttribute("aria-hidden", "true");
+      cell.style.setProperty("--row", Math.floor(index / SIZE));
+      cell.style.setProperty("--column", index % SIZE);
+      boardElement.appendChild(cell);
+    }
+
+    boardElement.appendChild(tileLayer);
+  } else if (previousBoard) {
+    previousLayer = tileLayer;
+    tileLayer.classList.remove("tile-layer-active");
+    const nextLayer = document.createElement("div");
+    nextLayer.className = "tile-layer tile-layer-active";
+    boardElement.appendChild(nextLayer);
+    tileLayer = nextLayer;
+  } else {
+    boardElement.querySelectorAll(".tile-layer:not(.tile-layer-active)")
+      .forEach((layer) => layer.remove());
   }
 
   board.forEach((row, rowIndex) => {
@@ -431,7 +471,6 @@ function renderBoard(previousBoard = null) {
 
       if (shouldAnimate) {
         tile.classList.add("tile-moving");
-        tile.classList.add("tile-entering");
       } else if (!previousBoard || previousBoard[rowIndex][columnIndex] === 0) {
         tile.classList.add("tile-entering");
       }
@@ -439,24 +478,35 @@ function renderBoard(previousBoard = null) {
     });
   });
 
-  boardElement.replaceChildren(fragment);
+  tileLayer.replaceChildren(fragment);
   undoButton.disabled = previousState === null || gameOver;
 
   if (previousBoard) {
     requestAnimationFrame(() => {
-      board.forEach((row, rowIndex) => {
-        row.forEach((value, columnIndex) => {
-          if (value) {
-            const tile = boardElement.querySelector(
-              `.tile[data-row="${rowIndex}"][data-column="${columnIndex}"]`
-            );
+      if (previousLayer) {
+        previousLayer.style.visibility = "hidden";
+      }
 
-            if (tile) {
-              tile.style.setProperty("--row", rowIndex);
-              tile.style.setProperty("--column", columnIndex);
-              tile.classList.remove("tile-moving");
+      requestAnimationFrame(() => {
+        board.forEach((row, rowIndex) => {
+          row.forEach((value, columnIndex) => {
+            if (value) {
+              const tile = tileLayer.querySelector(
+                `.tile[data-row="${rowIndex}"][data-column="${columnIndex}"]`
+              );
+
+              if (tile) {
+                tile.style.setProperty("--row", rowIndex);
+                tile.style.setProperty("--column", columnIndex);
+                tile.classList.remove("tile-moving");
+              }
             }
-          }
+          });
+
+          window.setTimeout(() => {
+            const oldLayers = boardElement.querySelectorAll(".tile-layer:not(.tile-layer-active)");
+            oldLayers.forEach((layer) => layer.remove());
+          }, 520);
         });
       });
     });
@@ -714,9 +764,14 @@ soundToggleButton.addEventListener("click", () => {
 
 musicModeSelect.addEventListener("change", () => {
   musicMode = musicModeSelect.value;
+  soundEnabled = true;
+  audioPaused = false;
   localStorage.setItem(MUSIC_MODE_KEY, musicMode);
+  localStorage.setItem(SOUND_KEY, "true");
+  localStorage.setItem(MUSIC_PAUSED_KEY, "false");
   updateMusicControls();
-  setMusicSource();
+  updateSoundButton();
+  setMusicSource({ startPlayback: true });
 });
 
 playlistTrackSelect.addEventListener("change", () => {
