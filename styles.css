@@ -488,23 +488,34 @@ h2 {
 }
 
 .tile-new-value {
-  animation: new-value-border 1800ms ease-out;
-  box-shadow: 0 0 0 2px rgba(247, 241, 223, 0.82),
+  position: absolute;
+  isolation: isolate;
+}
+
+.tile-new-value::after {
+  content: "";
+  position: absolute;
+  z-index: 30;
+  inset: -3px;
+  border: 3px solid rgba(247, 241, 223, 0.96);
+  box-shadow: inset 0 0 18px rgba(208, 167, 109, 0.38),
     0 0 18px rgba(208, 167, 109, 0.48);
+  pointer-events: none;
+  animation: new-value-border 1800ms ease-out forwards;
 }
 
 @keyframes new-value-border {
   0% {
-    box-shadow: 0 0 0 3px rgba(247, 241, 223, 0.96),
-      0 0 22px rgba(208, 167, 109, 0.56);
+    opacity: 1;
+    border-width: 4px;
   }
   55% {
-    box-shadow: 0 0 0 2px rgba(247, 241, 223, 0.72),
-      0 0 14px rgba(208, 167, 109, 0.38);
+    opacity: 0.82;
+    border-width: 3px;
   }
   100% {
-    box-shadow: 0 0 0 0 transparent,
-      0 0 0 transparent;
+    opacity: 0;
+    border-width: 0;
   }
 }
 
