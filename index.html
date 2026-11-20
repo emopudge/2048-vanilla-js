@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2048: Ryan Gosling</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="game-shell">
+    <header class="game-header">
+      <div>
+        <p class="eyebrow">The Gosling Collection</p>
+        <h1>2048</h1>
+      </div>
+
+      <section class="scoreboard" aria-label="Счет">
+        <div class="score-card">
+          <span>Счет</span>
+          <strong id="score">0</strong>
+        </div>
+        <div class="score-card">
+          <span>Рекорд</span>
+          <strong id="best-score">0</strong>
+        </div>
+      </section>
+    </header>
+
+    <section class="game-layout">
+      <aside class="game-actions" aria-label="Действия игры">
+        <button class="action-button" id="new-game" type="button">Новая игра</button>
+        <button class="action-button" id="undo" type="button" disabled>Отмена хода</button>
+        <button class="action-button" id="leaderboard-button" type="button">Лидеры</button>
+      </aside>
+
+      <section class="board-wrap" aria-label="Игровое поле 2048">
+        <div id="game-board" class="game-board" role="grid" aria-label="Сетка 4 на 4"></div>
+      </section>
+    </section>
+
+    <nav class="mobile-controls" aria-label="Управление" hidden>
+      <button type="button" data-direction="up" aria-label="Вверх">↑</button>
+      <button type="button" data-direction="left" aria-label="Влево">←</button>
+      <button type="button" data-direction="down" aria-label="Вниз">↓</button>
+      <button type="button" data-direction="right" aria-label="Вправо">→</button>
+    </nav>
+  </main>
+
+  <div class="modal-backdrop" id="game-over-modal" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
+      <p class="eyebrow">Финальная сцена</p>
+      <h2 id="game-over-title">Игра окончена</h2>
+      <p id="game-over-message">Сохраните свой результат в таблицу лидеров.</p>
+      <div class="save-score">
+        <label for="player-name">Имя игрока</label>
+        <input id="player-name" type="text" maxlength="24" autocomplete="nickname">
+        <button id="save-score" type="button">Сохранить результат</button>
+      </div>
+      <button class="action-button" id="restart-after-game" type="button">Начать заново</button>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="leaderboard-modal" hidden>
+    <section class="modal-card leaderboard-card" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
+      <p class="eyebrow">Hall of Gosling</p>
+      <h2 id="leaderboard-title">Таблица лидеров</h2>
+      <div class="leaderboard-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Место</th>
+              <th>Имя</th>
+              <th>Очки</th>
+              <th>Дата</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-list"></tbody>
+        </table>
+      </div>
+      <button class="action-button" id="close-leaderboard" type="button">Закрыть</button>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
