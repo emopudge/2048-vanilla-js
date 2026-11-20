@@ -532,7 +532,7 @@ function saveScore() {
   leaderboard.push({ name, score, date, submittedAt: submittedAt.toISOString() });
   leaderboard.sort((first, second) => second.score - first.score);
 
-  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard.slice(0, 10)));
+  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard));
   scoreSaved = true;
   saveScoreArea.hidden = true;
   gameOverMessage.textContent = "Ваш рекорд сохранен";
