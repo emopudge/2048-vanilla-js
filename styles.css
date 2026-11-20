@@ -18,6 +18,7 @@ body {
   font-family: "Trebuchet MS", Arial, sans-serif;
   background: #17191d;
   overflow-x: hidden;
+  overscroll-behavior: none;
 }
 
 .theme-backdrop {
@@ -677,7 +678,7 @@ th {
 @media (max-width: 760px) {
   :root {
     --board-gap: 8px;
-    --board-size: min(calc(100vw - 32px), calc(100svh - 310px), 520px);
+    --board-size: min(calc(100vw - 32px), calc(100svh - 390px), 520px);
   }
 
   .theme-strip {
@@ -717,6 +718,7 @@ th {
 
   .game-shell {
     width: calc(100% - 32px);
+    height: 100svh;
     min-height: 100svh;
     justify-content: flex-start;
     padding: 12px 0;
@@ -750,12 +752,14 @@ th {
 
   .game-layout {
     grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .game-actions {
-    order: 3;
+    order: 2;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
   }
 
   .board-wrap {
@@ -765,7 +769,8 @@ th {
   .mobile-controls {
     order: 2;
     width: 198px;
-    margin: 10px auto 8px;
+    margin: 4px auto 0;
+    grid-column: 1 / -1;
     grid-template-columns: repeat(3, 48px);
     grid-template-rows: repeat(2, 48px);
   }

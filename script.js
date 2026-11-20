@@ -276,8 +276,13 @@ function rememberMusicPosition() {
 function fadeOutInterval(callback, duration = 450) {
   const startedVolume = themeAudio.volume;
   const startedAt = performance.now();
+  const fadeToken = ++audioFadeToken;
 
   function step(now) {
+    if (fadeToken !== audioFadeToken) {
+      return;
+    }
+
     const progress = Math.min(1, (now - startedAt) / duration);
     themeAudio.volume = startedVolume * (1 - progress);
 
@@ -294,8 +299,13 @@ function fadeOutInterval(callback, duration = 450) {
 function fadeInInterval(duration = 700) {
   themeAudio.volume = 0;
   const startedAt = performance.now();
+  const fadeToken = ++audioFadeToken;
 
   function step(now) {
+    if (fadeToken !== audioFadeToken) {
+      return;
+    }
+
     const progress = Math.min(1, (now - startedAt) / duration);
     themeAudio.volume = 0.65 * progress;
 
@@ -313,6 +323,9 @@ function applyMusicSource(nextSource, startPlayback = false, resetPosition = fal
   themeAudio.loop = musicMode === "themes";
 
   if (!nextSource || themeAudio.dataset.source === nextSource) {
+    ++audioFadeToken;
+    themeAudio.volume = 0.65;
+
     if (resetPosition) {
       themeAudio.currentTime = 0;
     }
@@ -329,7 +342,14 @@ function applyMusicSource(nextSource, startPlayback = false, resetPosition = fal
   }
 
   rememberMusicPosition();
+  const sourceRequest = ++audioFadeToken;
+  themeAudio.dataset.request = String(sourceRequest);
+
   fadeOutInterval(() => {
+    if (themeAudio.dataset.request !== String(sourceRequest)) {
+      return;
+    }
+
     themeAudio.pause();
     themeAudio.src = nextSource;
     themeAudio.dataset.source = nextSource;
@@ -338,6 +358,10 @@ function applyMusicSource(nextSource, startPlayback = false, resetPosition = fal
 
     let restored = false;
     const playWhenReady = () => {
+      if (themeAudio.dataset.request !== String(sourceRequest)) {
+        return;
+      }
+
       if (restored) {
         return;
       }
@@ -840,8 +864,8 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
       const tile = document.createElement("div");
       tile.className = "tile";
       tile.setAttribute("role", "gridcell");
-      tile.textContent = mergingValue ? String(mergingValue / 2) : value;
-      tile.dataset.value = mergingValue ? String(mergingValue / 2) : String(value);
+      tile.textContent = mergingValue || value;
+      tile.dataset.value = String(mergingValue || value);
       tile.dataset.row = rowIndex;
       tile.dataset.column = columnIndex;
       tile.setAttribute("aria-label", `Плитка ${value}`);
@@ -852,7 +876,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
       const [background, color] = tileColors[value] || ["#3c3a32", "#f9f6f2"];
       tile.style.backgroundColor = background;
       tile.style.color = color;
-      applyTileImage(tile, mergingValue ? mergingValue / 2 : value);
+      applyTileImage(tile, mergingValue || value);
 
       if (shouldAnimate) {
         tile.classList.add("tile-moving");
@@ -1148,13 +1172,20 @@ let touchStart = null;
 boardElement.addEventListener("touchstart", (event) => {
   const touch = event.changedTouches[0];
   touchStart = { x: touch.clientX, y: touch.clientY };
-}, { passive: true });
+}, { passive: false });
+
+boardElement.addEventListener("touchmove", (event) => {
+  if (touchStart) {
+    event.preventDefault();
+  }
+}, { passive: false });
 
 boardElement.addEventListener("touchend", (event) => {
   if (!touchStart) {
     return;
   }
 
+  event.preventDefault();
   const touch = event.changedTouches[0];
   const deltaX = touch.clientX - touchStart.x;
   const deltaY = touch.clientY - touchStart.y;
