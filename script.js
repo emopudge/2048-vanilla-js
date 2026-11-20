@@ -249,6 +249,7 @@ function setMusicSource({ startPlayback = false, resetPosition = false } = {}) {
     ? playlistTracks[playlistTrack]
     : activeTheme.audio;
 
+  updateTrackTitle();
   applyMusicSource(nextSource, startPlayback, resetPosition);
 }
 
@@ -864,8 +865,9 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
       const tile = document.createElement("div");
       tile.className = "tile";
       tile.setAttribute("role", "gridcell");
-      tile.textContent = mergingValue || value;
-      tile.dataset.value = String(mergingValue || value);
+      const displayValue = mergingValue ? mergingValue / 2 : value;
+      tile.textContent = String(displayValue);
+      tile.dataset.value = String(displayValue);
       tile.dataset.row = rowIndex;
       tile.dataset.column = columnIndex;
       tile.setAttribute("aria-label", `Плитка ${value}`);
@@ -876,7 +878,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
       const [background, color] = tileColors[value] || ["#3c3a32", "#f9f6f2"];
       tile.style.backgroundColor = background;
       tile.style.color = color;
-      applyTileImage(tile, mergingValue || value);
+      applyTileImage(tile, displayValue);
 
       if (shouldAnimate) {
         tile.classList.add("tile-moving");
@@ -950,9 +952,12 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
                 if (tile.dataset.mergeTarget === "true") {
                   const mergeValue = Number(tile.dataset.mergeValue);
                   if (tile.dataset.wasMoving === "true") {
-                    tile.addEventListener("transitionend", () => {
+                    const finalizeAfterMove = () => {
+                      tile.removeEventListener("transitionend", finalizeAfterMove);
                       finalizeMergedTile(tile, mergeValue);
-                    }, { once: true });
+                    };
+                    tile.addEventListener("transitionend", finalizeAfterMove);
+                    window.setTimeout(() => finalizeMergedTile(tile, mergeValue), 360);
                   } else {
                     finalizeMergedTile(tile, mergeValue);
                   }
@@ -1246,6 +1251,7 @@ musicModeSelect.addEventListener("change", () => {
   localStorage.setItem(SOUND_KEY, "true");
   localStorage.setItem(MUSIC_PAUSED_KEY, "false");
   updateMusicControls();
+  updateTrackTitle();
   updateSoundButton();
   setMusicSource({
     startPlayback: true,
