@@ -274,10 +274,9 @@ function rememberMusicPosition() {
   localStorage.setItem(MUSIC_POSITION_KEY, JSON.stringify(positions));
 }
 
-function fadeOutInterval(callback, duration = 450) {
+function fadeOutInterval(callback, duration = 450, fadeToken = ++audioFadeToken) {
   const startedVolume = themeAudio.volume;
   const startedAt = performance.now();
-  const fadeToken = ++audioFadeToken;
 
   function step(now) {
     if (fadeToken !== audioFadeToken) {
@@ -297,10 +296,9 @@ function fadeOutInterval(callback, duration = 450) {
   requestAnimationFrame(step);
 }
 
-function fadeInInterval(duration = 700) {
+function fadeInInterval(duration = 700, fadeToken = ++audioFadeToken) {
   themeAudio.volume = 0;
   const startedAt = performance.now();
-  const fadeToken = ++audioFadeToken;
 
   function step(now) {
     if (fadeToken !== audioFadeToken) {
@@ -378,13 +376,13 @@ function applyMusicSource(nextSource, startPlayback = false, resetPosition = fal
 
       if (startPlayback || (soundEnabled && !audioPaused)) {
         themeAudio.play().catch(() => {});
-        fadeInInterval();
+        fadeInInterval(700, sourceRequest);
       }
     };
 
     themeAudio.addEventListener("loadedmetadata", playWhenReady, { once: true });
     themeAudio.addEventListener("canplay", playWhenReady, { once: true });
-  });
+  }, 450, sourceRequest);
 }
 
 function formatTime(seconds) {
@@ -1188,7 +1186,7 @@ boardElement.addEventListener("touchend", (event) => {
   } else {
     move(deltaY > 0 ? "down" : "up");
   }
-}, { passive: true });
+}, { passive: false });
 
 newGameButton.addEventListener("click", startNewGame);
 undoButton.addEventListener("click", undoMove);
@@ -1204,6 +1202,23 @@ leaderboardButton.addEventListener("click", () => {
 closeLeaderboardButton.addEventListener("click", () => {
   leaderboardModal.hidden = true;
   mobileControls.hidden = gameOver;
+  if (soundEnabled && !audioPaused) {
+    themeAudio.volume = 0.65;
+    themeAudio.play().catch(() => {});
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && soundEnabled && !audioPaused) {
+    themeAudio.volume = 0.65;
+    themeAudio.play().catch(() => {});
+  }
+});
+
+themeAudio.addEventListener("playing", () => {
+  if (soundEnabled && !audioPaused) {
+    themeAudio.volume = 0.65;
+  }
 });
 
 soundToggleButton.addEventListener("click", () => {

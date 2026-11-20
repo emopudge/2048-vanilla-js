@@ -21,6 +21,10 @@ body {
   overscroll-behavior: none;
 }
 
+html {
+  overscroll-behavior: none;
+}
+
 .theme-backdrop {
   position: fixed;
   z-index: -2;
@@ -676,9 +680,16 @@ th {
 }
 
 @media (max-width: 760px) {
+  html,
+  body {
+    width: 100%;
+    height: 100svh;
+    overflow: hidden;
+  }
+
   :root {
     --board-gap: 8px;
-    --board-size: min(calc(100vw - 32px), calc(100svh - 390px), 520px);
+    --board-size: min(calc(100vw - 32px), calc(100svh - 430px), 520px);
   }
 
   .theme-strip {
