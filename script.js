@@ -75,6 +75,16 @@ const tileThemeImages = {
   2048: "assets/images/barbie.jpg",
 };
 
+Object.values(tileThemeImages).forEach((imageSource) => {
+  if (!imageCache.has(imageSource)) {
+    const image = new Image();
+    image.onload = () => imageCache.set(imageSource, true);
+    image.onerror = () => imageCache.set(imageSource, false);
+    imageCache.set(imageSource, image);
+    image.src = imageSource;
+  }
+});
+
 const playlistTracks = {
   "la-la-land": "assets/audio/la-la-land.mp3",
   "blade-runner-2049": "assets/audio/blade-runner-2049.mp3",
@@ -423,6 +433,16 @@ function applyTileImage(tile, value) {
     const fallbackSource = "assets/images/la-la-land.jpg";
     tile.style.backgroundImage = `linear-gradient(rgba(8, 10, 13, 0.12), rgba(8, 10, 13, 0.36)), url("${fallbackSource}")`;
   }
+}
+
+function finalizeMergedTile(tile, mergeValue) {
+  tile.textContent = String(mergeValue);
+  tile.dataset.value = String(mergeValue);
+  tile.setAttribute("aria-label", `Плитка ${mergeValue}`);
+  applyTileImage(tile, mergeValue);
+  tile.classList.remove("tile-merging");
+  tile.classList.add("tile-merge-complete");
+  window.requestAnimationFrame(() => tile.classList.remove("tile-merge-complete"));
 }
 
 function updateScore() {
@@ -820,8 +840,8 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
       const tile = document.createElement("div");
       tile.className = "tile";
       tile.setAttribute("role", "gridcell");
-      tile.textContent = mergingValue || value;
-      tile.dataset.value = value;
+      tile.textContent = mergingValue ? String(mergingValue / 2) : value;
+      tile.dataset.value = mergingValue ? String(mergingValue / 2) : String(value);
       tile.dataset.row = rowIndex;
       tile.dataset.column = columnIndex;
       tile.setAttribute("aria-label", `Плитка ${value}`);
@@ -832,13 +852,15 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
       const [background, color] = tileColors[value] || ["#3c3a32", "#f9f6f2"];
       tile.style.backgroundColor = background;
       tile.style.color = color;
-      applyTileImage(tile, mergingValue || value);
+      applyTileImage(tile, mergingValue ? mergingValue / 2 : value);
 
       if (shouldAnimate) {
         tile.classList.add("tile-moving");
         if (mergingValue) {
           tile.classList.add("tile-merging");
           tile.dataset.mergeTarget = "true";
+          tile.dataset.mergeValue = String(mergingValue);
+          tile.dataset.wasMoving = String(shouldAnimate);
         }
       } else if (!previousBoard || previousBoard[rowIndex][columnIndex] === 0) {
         tile.classList.add("tile-entering");
@@ -858,8 +880,8 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         const duplicate = document.createElement("div");
         duplicate.className = "tile tile-moving tile-merging";
         duplicate.setAttribute("role", "gridcell");
-        duplicate.textContent = String(merge.value);
-        duplicate.dataset.value = String(merge.value);
+        duplicate.textContent = String(merge.value / 2);
+        duplicate.dataset.value = String(merge.value / 2);
         duplicate.dataset.row = targetRow;
         duplicate.dataset.column = targetColumn;
         duplicate.dataset.sourceRow = sourceRow;
@@ -868,7 +890,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         duplicate.style.setProperty("--row", sourceRow);
         duplicate.style.setProperty("--column", sourceColumn);
         duplicate.style.zIndex = "20";
-        applyTileImage(duplicate, merge.value);
+        applyTileImage(duplicate, merge.value / 2);
         fragment.appendChild(duplicate);
       });
     });
@@ -902,8 +924,14 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
                 tile.style.setProperty("--column", columnIndex);
                 tile.classList.remove("tile-moving");
                 if (tile.dataset.mergeTarget === "true") {
-                  tile.classList.add("tile-merge-complete");
-                  tile.classList.remove("tile-merging");
+                  const mergeValue = Number(tile.dataset.mergeValue);
+                  if (tile.dataset.wasMoving === "true") {
+                    tile.addEventListener("transitionend", () => {
+                      finalizeMergedTile(tile, mergeValue);
+                    }, { once: true });
+                  } else {
+                    finalizeMergedTile(tile, mergeValue);
+                  }
                 }
               }
             }

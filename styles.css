@@ -474,16 +474,13 @@ h2 {
 
 @keyframes merge-complete {
   0% {
-    filter: brightness(1.08);
-    transform: scale(1);
+    filter: none;
   }
   50% {
-    filter: brightness(1.04);
-    transform: scale(1.015);
+    filter: none;
   }
   100% {
-    filter: brightness(1);
-    transform: scale(1);
+    filter: none;
   }
 }
 
