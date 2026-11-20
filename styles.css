@@ -227,6 +227,12 @@ h2 {
   width: min(680px, 100%);
 }
 
+.leaderboard-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .leaderboard-table-wrap {
   overflow-x: auto;
   margin: 24px 0;
@@ -291,7 +297,7 @@ th {
 
 @media (max-width: 760px) {
   :root {
-    --board-size: min(calc(100vw - 32px), calc(100vh - 280px), 520px);
+    --board-size: min(calc(100vw - 32px), calc(100vh - 330px), 520px);
   }
 
   .game-shell {
@@ -323,9 +329,17 @@ th {
   }
 
   .game-actions {
-    order: 2;
+    order: 3;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .board-wrap {
+    order: 1;
+  }
+
+  .mobile-controls {
+    order: 2;
   }
 
   .game-actions .action-button {

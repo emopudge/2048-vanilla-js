@@ -36,14 +36,14 @@
       <section class="board-wrap" aria-label="Игровое поле 2048">
         <div id="game-board" class="game-board" role="grid" aria-label="Сетка 4 на 4"></div>
       </section>
-    </section>
 
-    <nav class="mobile-controls" aria-label="Управление" hidden>
-      <button type="button" data-direction="up" aria-label="Вверх">↑</button>
-      <button type="button" data-direction="left" aria-label="Влево">←</button>
-      <button type="button" data-direction="down" aria-label="Вниз">↓</button>
-      <button type="button" data-direction="right" aria-label="Вправо">→</button>
-    </nav>
+      <nav class="mobile-controls" aria-label="Управление" hidden>
+        <button type="button" data-direction="up" aria-label="Вверх">↑</button>
+        <button type="button" data-direction="left" aria-label="Влево">←</button>
+        <button type="button" data-direction="down" aria-label="Вниз">↓</button>
+        <button type="button" data-direction="right" aria-label="Вправо">→</button>
+      </nav>
+    </section>
   </main>
 
   <div class="modal-backdrop" id="game-over-modal" hidden>
@@ -51,7 +51,7 @@
       <p class="eyebrow">Финальная сцена</p>
       <h2 id="game-over-title">Игра окончена</h2>
       <p id="game-over-message">Сохраните свой результат в таблицу лидеров.</p>
-      <div class="save-score">
+      <div class="save-score" id="save-score-area">
         <label for="player-name">Имя игрока</label>
         <input id="player-name" type="text" maxlength="24" autocomplete="nickname">
         <button id="save-score" type="button">Сохранить результат</button>
@@ -64,6 +64,7 @@
     <section class="modal-card leaderboard-card" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
       <p class="eyebrow">Hall of Gosling</p>
       <h2 id="leaderboard-title">Таблица лидеров</h2>
+      <p class="leaderboard-note">Рекорды хранятся только в этом браузере на этом устройстве.</p>
       <div class="leaderboard-table-wrap">
         <table>
           <thead>
@@ -71,7 +72,7 @@
               <th>Место</th>
               <th>Имя</th>
               <th>Очки</th>
-              <th>Дата</th>
+              <th>Дата и время</th>
             </tr>
           </thead>
           <tbody id="leaderboard-list"></tbody>

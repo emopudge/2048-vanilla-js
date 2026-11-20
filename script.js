@@ -6,14 +6,24 @@ const newGameButton = document.querySelector("#new-game");
 const undoButton = document.querySelector("#undo");
 const gameOverModal = document.querySelector("#game-over-modal");
 const restartAfterGameButton = document.querySelector("#restart-after-game");
+const leaderboardModal = document.querySelector("#leaderboard-modal");
+const leaderboardButton = document.querySelector("#leaderboard-button");
+const closeLeaderboardButton = document.querySelector("#close-leaderboard");
+const leaderboardList = document.querySelector("#leaderboard-list");
+const saveScoreButton = document.querySelector("#save-score");
+const saveScoreArea = document.querySelector("#save-score-area");
+const playerNameInput = document.querySelector("#player-name");
+const gameOverMessage = document.querySelector("#game-over-message");
 
 const SIZE = 4;
 const BEST_SCORE_KEY = "gosling-2048-best-score";
 const GAME_STATE_KEY = "gosling-2048-game-state";
+const LEADERBOARD_KEY = "gosling-2048-leaderboard";
 let board = [];
 let score = 0;
 let gameOver = false;
 let previousState = null;
+let scoreSaved = false;
 
 const tileColors = {
   2: ["#eee4da", "#776e65"],
@@ -62,7 +72,14 @@ function getSavedGameState() {
     return null;
   }
 
-  const parsedState = JSON.parse(savedState);
+  let parsedState;
+
+  try {
+    parsedState = JSON.parse(savedState);
+  } catch {
+    return null;
+  }
+
   const hasValidBoard = Array.isArray(parsedState.board)
     && parsedState.board.length === SIZE
     && parsedState.board.every((row) => Array.isArray(row) && row.length === SIZE);
@@ -72,6 +89,78 @@ function getSavedGameState() {
   }
 
   return parsedState;
+}
+
+function getLeaderboard() {
+  const savedLeaderboard = localStorage.getItem(LEADERBOARD_KEY);
+
+  if (!savedLeaderboard) {
+    return [];
+  }
+
+  try {
+    const leaderboard = JSON.parse(savedLeaderboard);
+    return Array.isArray(leaderboard) ? leaderboard : [];
+  } catch {
+    return [];
+  }
+}
+
+function renderLeaderboard() {
+  const leaderboard = getLeaderboard();
+  const fragment = document.createDocumentFragment();
+
+  if (leaderboard.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 4;
+    cell.textContent = "Пока нет сохраненных результатов";
+    row.appendChild(cell);
+    fragment.appendChild(row);
+  } else {
+    leaderboard.forEach((record, index) => {
+      const row = document.createElement("tr");
+      const placeCell = document.createElement("td");
+      const nameCell = document.createElement("td");
+      const scoreCell = document.createElement("td");
+      const dateCell = document.createElement("td");
+
+      placeCell.textContent = String(index + 1);
+      nameCell.textContent = record.name;
+      scoreCell.textContent = String(record.score);
+      dateCell.textContent = record.date;
+      row.append(placeCell, nameCell, scoreCell, dateCell);
+      fragment.appendChild(row);
+    });
+  }
+
+  leaderboardList.replaceChildren(fragment);
+}
+
+function saveScore() {
+  if (scoreSaved) {
+    return;
+  }
+
+  const name = playerNameInput.value.trim() || "Аноним";
+  const leaderboard = getLeaderboard();
+  const submittedAt = new Date();
+  const date = new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(submittedAt);
+
+  leaderboard.push({ name, score, date, submittedAt: submittedAt.toISOString() });
+  leaderboard.sort((first, second) => second.score - first.score);
+
+  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard.slice(0, 10)));
+  scoreSaved = true;
+  saveScoreArea.hidden = true;
+  gameOverMessage.textContent = "Ваш рекорд сохранен";
+  renderLeaderboard();
 }
 
 function renderBoard() {
@@ -222,6 +311,10 @@ function hasAvailableMoves() {
 
 function finishGame() {
   gameOver = true;
+  scoreSaved = false;
+  saveScoreArea.hidden = false;
+  playerNameInput.value = "";
+  gameOverMessage.textContent = "Сохраните свой результат в таблицу лидеров.";
   mobileControls.hidden = true;
   gameOverModal.hidden = false;
   renderBoard();
@@ -246,6 +339,7 @@ function startNewGame() {
   score = 0;
   gameOver = false;
   previousState = null;
+  scoreSaved = false;
   gameOverModal.hidden = true;
   mobileControls.hidden = false;
   addRandomTile();
@@ -283,6 +377,18 @@ mobileControls.addEventListener("click", (event) => {
 newGameButton.addEventListener("click", startNewGame);
 undoButton.addEventListener("click", undoMove);
 restartAfterGameButton.addEventListener("click", startNewGame);
+saveScoreButton.addEventListener("click", saveScore);
+
+leaderboardButton.addEventListener("click", () => {
+  renderLeaderboard();
+  leaderboardModal.hidden = false;
+  mobileControls.hidden = true;
+});
+
+closeLeaderboardButton.addEventListener("click", () => {
+  leaderboardModal.hidden = true;
+  mobileControls.hidden = gameOver;
+});
 
 bestScoreElement.textContent = getBestScore();
 const savedGameState = getSavedGameState();
