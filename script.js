@@ -539,13 +539,26 @@ function saveScore() {
   renderLeaderboard();
 }
 
-function getAnimationSource(rowIndex, columnIndex, value, previousBoard, direction, consumedSources) {
+function getAnimationSource(rowIndex, columnIndex, value, previousBoard, direction, consumedSources, mergePlan) {
   if (!previousBoard || !direction) {
     return null;
   }
 
   const destinationKey = `${rowIndex}-${columnIndex}`;
   const exactSourceValue = previousBoard[rowIndex][columnIndex];
+  const merge = mergePlan?.get(destinationKey);
+
+  if (merge) {
+    const source = merge.sources.find(([row, column]) => {
+      const sourceKey = `${row}-${column}`;
+      return !consumedSources.has(sourceKey);
+    });
+
+    if (source) {
+      consumedSources.add(`${source[0]}-${source[1]}`);
+      return source;
+    }
+  }
 
   if (!consumedSources.has(destinationKey) && exactSourceValue === value) {
     consumedSources.add(destinationKey);
@@ -590,6 +603,73 @@ function getAnimationSource(rowIndex, columnIndex, value, previousBoard, directi
 
   consumedSources.add(`${source[0]}-${source[1]}`);
   return source;
+}
+
+function buildMergePlan(previousBoard, direction) {
+  const mergePlan = new Map();
+
+  const addMerge = (targetRow, targetColumn, sources, value) => {
+    mergePlan.set(`${targetRow}-${targetColumn}`, { sources, value });
+  };
+
+  if (direction === "left" || direction === "right") {
+    previousBoard.forEach((row, rowIndex) => {
+      const line = direction === "right" ? [...row].reverse() : [...row];
+      const compacted = line.filter(Boolean);
+      let targetIndex = 0;
+
+      for (let index = 0; index < compacted.length; index += 1) {
+        if (compacted[index] === compacted[index + 1]) {
+          const originalIndexes = direction === "right"
+            ? [SIZE - 1 - index, SIZE - 2 - index]
+            : [index, index + 1];
+          const targetColumn = direction === "right"
+            ? SIZE - 1 - targetIndex
+            : targetIndex;
+          const value = compacted[index] * 2;
+
+          addMerge(
+            rowIndex,
+            targetColumn,
+            originalIndexes.map((column) => [rowIndex, column]),
+            value
+          );
+          index += 1;
+        }
+        targetIndex += 1;
+      }
+    });
+  } else {
+    for (let columnIndex = 0; columnIndex < SIZE; columnIndex += 1) {
+      const column = previousBoard.map((row) => row[columnIndex]);
+      const line = direction === "down" ? [...column].reverse() : [...column];
+      const compacted = line.filter(Boolean);
+      let targetIndex = 0;
+
+      for (let index = 0; index < compacted.length; index += 1) {
+        if (compacted[index] === compacted[index + 1]) {
+          const originalIndexes = direction === "down"
+            ? [SIZE - 1 - index, SIZE - 2 - index]
+            : [index, index + 1];
+          const targetRow = direction === "down"
+            ? SIZE - 1 - targetIndex
+            : targetIndex;
+          const value = compacted[index] * 2;
+
+          addMerge(
+            targetRow,
+            columnIndex,
+            originalIndexes.map((row) => [row, columnIndex]),
+            value
+          );
+          index += 1;
+        }
+        targetIndex += 1;
+      }
+    }
+  }
+
+  return mergePlan;
 }
 
 function getMergeSources(rowIndex, columnIndex, value, previousBoard, direction) {
@@ -637,6 +717,7 @@ function getMergeSources(rowIndex, columnIndex, value, previousBoard, direction)
 function renderBoard(previousBoard = null, direction = null) {
   const fragment = document.createDocumentFragment();
   const consumedSources = new Set();
+  const mergePlan = previousBoard ? buildMergePlan(previousBoard, direction) : new Map();
   let tileLayer = boardElement.querySelector(".tile-layer-active")
     || boardElement.querySelector(".tile-layer");
   let previousLayer = null;
@@ -684,7 +765,8 @@ function renderBoard(previousBoard = null, direction = null) {
         value,
         previousBoard,
         direction,
-        consumedSources
+        consumedSources,
+        mergePlan
       );
 
       if (source) {
@@ -695,6 +777,11 @@ function renderBoard(previousBoard = null, direction = null) {
         if (shouldAnimate && sourceValue === value / 2) {
           mergingValue = value;
         }
+      }
+
+      const targetMerge = mergePlan.get(`${rowIndex}-${columnIndex}`);
+      if (targetMerge) {
+        mergingValue = targetMerge.value;
       }
 
       const tile = document.createElement("div");
@@ -727,6 +814,30 @@ function renderBoard(previousBoard = null, direction = null) {
     });
   });
 
+  if (previousBoard) {
+    mergePlan.forEach((merge, targetKey) => {
+      const [targetRow, targetColumn] = targetKey.split("-").map(Number);
+
+      merge.sources.slice(1).forEach(([sourceRow, sourceColumn]) => {
+        const duplicate = document.createElement("div");
+        duplicate.className = "tile tile-moving tile-merging";
+        duplicate.setAttribute("role", "gridcell");
+        duplicate.textContent = String(merge.value / 2);
+        duplicate.dataset.value = String(merge.value / 2);
+        duplicate.dataset.row = targetRow;
+        duplicate.dataset.column = targetColumn;
+        duplicate.dataset.sourceRow = sourceRow;
+        duplicate.dataset.sourceColumn = sourceColumn;
+        duplicate.dataset.mergeValue = String(merge.value);
+        duplicate.style.setProperty("--row", sourceRow);
+        duplicate.style.setProperty("--column", sourceColumn);
+        duplicate.style.zIndex = "20";
+        applyTileImage(duplicate, merge.value / 2);
+        fragment.appendChild(duplicate);
+      });
+    });
+  }
+
   tileLayer.replaceChildren(fragment);
   undoButton.disabled = previousState === null || gameOver;
 
@@ -737,6 +848,13 @@ function renderBoard(previousBoard = null, direction = null) {
       }
 
       requestAnimationFrame(() => {
+        tileLayer.querySelectorAll(".tile[data-source-row]").forEach((duplicate) => {
+          duplicate.style.setProperty("--row", duplicate.dataset.row);
+          duplicate.style.setProperty("--column", duplicate.dataset.column);
+
+          window.setTimeout(() => duplicate.remove(), 420);
+        });
+
         board.forEach((row, rowIndex) => {
           row.forEach((value, columnIndex) => {
             if (value) {
