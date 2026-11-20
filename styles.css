@@ -488,23 +488,23 @@ h2 {
 }
 
 .tile-new-value {
-  animation: new-value-glow 900ms ease-out;
+  animation: new-value-border 1800ms ease-out;
   box-shadow: 0 0 0 2px rgba(247, 241, 223, 0.82),
     0 0 18px rgba(208, 167, 109, 0.48);
 }
 
-@keyframes new-value-glow {
+@keyframes new-value-border {
   0% {
-    filter: brightness(1.28) saturate(1.12);
-    transform: scale(1.06);
+    box-shadow: 0 0 0 3px rgba(247, 241, 223, 0.96),
+      0 0 22px rgba(208, 167, 109, 0.56);
   }
   55% {
-    filter: brightness(1.12);
-    transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(247, 241, 223, 0.72),
+      0 0 14px rgba(208, 167, 109, 0.38);
   }
   100% {
-    filter: brightness(1);
-    transform: scale(1);
+    box-shadow: 0 0 0 0 transparent,
+      0 0 0 transparent;
   }
 }
 
