@@ -3,14 +3,17 @@ const scoreElement = document.querySelector("#score");
 const bestScoreElement = document.querySelector("#best-score");
 const mobileControls = document.querySelector(".mobile-controls");
 const newGameButton = document.querySelector("#new-game");
+const undoButton = document.querySelector("#undo");
 const gameOverModal = document.querySelector("#game-over-modal");
 const restartAfterGameButton = document.querySelector("#restart-after-game");
 
 const SIZE = 4;
 const BEST_SCORE_KEY = "gosling-2048-best-score";
+const GAME_STATE_KEY = "gosling-2048-game-state";
 let board = [];
 let score = 0;
 let gameOver = false;
+let previousState = null;
 
 const tileColors = {
   2: ["#eee4da", "#776e65"],
@@ -44,6 +47,33 @@ function updateScore() {
   bestScoreElement.textContent = getBestScore();
 }
 
+function saveGameState() {
+  localStorage.setItem(GAME_STATE_KEY, JSON.stringify({
+    board,
+    score,
+    gameOver,
+  }));
+}
+
+function getSavedGameState() {
+  const savedState = localStorage.getItem(GAME_STATE_KEY);
+
+  if (!savedState) {
+    return null;
+  }
+
+  const parsedState = JSON.parse(savedState);
+  const hasValidBoard = Array.isArray(parsedState.board)
+    && parsedState.board.length === SIZE
+    && parsedState.board.every((row) => Array.isArray(row) && row.length === SIZE);
+
+  if (!hasValidBoard || typeof parsedState.score !== "number") {
+    return null;
+  }
+
+  return parsedState;
+}
+
 function renderBoard() {
   const fragment = document.createDocumentFragment();
 
@@ -68,6 +98,7 @@ function renderBoard() {
   });
 
   boardElement.replaceChildren(fragment);
+  undoButton.disabled = previousState === null || gameOver;
 }
 
 function addRandomTile() {
@@ -148,25 +179,80 @@ function move(direction) {
   }
 
   if (JSON.stringify(board) === previousBoard) {
+    if (!hasAvailableMoves()) {
+      finishGame();
+    }
     return;
   }
 
+  previousState = {
+    board: JSON.parse(previousBoard),
+    score,
+  };
   score += gainedScore;
   addRandomTile();
   renderBoard();
   updateScore();
+  saveGameState();
+
+  if (!hasAvailableMoves()) {
+    finishGame();
+  }
+}
+
+function hasAvailableMoves() {
+  for (let rowIndex = 0; rowIndex < SIZE; rowIndex += 1) {
+    for (let columnIndex = 0; columnIndex < SIZE; columnIndex += 1) {
+      if (board[rowIndex][columnIndex] === 0) {
+        return true;
+      }
+
+      const currentValue = board[rowIndex][columnIndex];
+      const rightValue = board[rowIndex][columnIndex + 1];
+      const bottomValue = board[rowIndex + 1]?.[columnIndex];
+
+      if (currentValue === rightValue || currentValue === bottomValue) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function finishGame() {
+  gameOver = true;
+  mobileControls.hidden = true;
+  gameOverModal.hidden = false;
+  renderBoard();
+  saveGameState();
+}
+
+function undoMove() {
+  if (!previousState || gameOver) {
+    return;
+  }
+
+  board = previousState.board;
+  score = previousState.score;
+  previousState = null;
+  renderBoard();
+  updateScore();
+  saveGameState();
 }
 
 function startNewGame() {
   board = createEmptyBoard();
   score = 0;
   gameOver = false;
+  previousState = null;
   gameOverModal.hidden = true;
   mobileControls.hidden = false;
   addRandomTile();
   addRandomTile();
   renderBoard();
   updateScore();
+  saveGameState();
 }
 
 document.addEventListener("keydown", (event) => {
@@ -195,7 +281,23 @@ mobileControls.addEventListener("click", (event) => {
 });
 
 newGameButton.addEventListener("click", startNewGame);
+undoButton.addEventListener("click", undoMove);
 restartAfterGameButton.addEventListener("click", startNewGame);
 
 bestScoreElement.textContent = getBestScore();
-startNewGame();
+const savedGameState = getSavedGameState();
+
+if (savedGameState) {
+  board = savedGameState.board;
+  score = savedGameState.score;
+  gameOver = Boolean(savedGameState.gameOver);
+  mobileControls.hidden = gameOver;
+  renderBoard();
+  updateScore();
+
+  if (gameOver) {
+    gameOverModal.hidden = false;
+  }
+} else {
+  startNewGame();
+}
