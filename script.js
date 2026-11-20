@@ -46,6 +46,7 @@ let soundEnabled = localStorage.getItem(SOUND_KEY) === "true";
 let musicMode = localStorage.getItem(MUSIC_MODE_KEY) || "themes";
 let playlistTrack = localStorage.getItem(PLAYLIST_TRACK_KEY) || "la-la-land";
 let audioPaused = localStorage.getItem(MUSIC_PAUSED_KEY) === "true";
+let audioFadeToken = 0;
 
 const themes = [
   { title: "Ла-Ла Ленд", threshold: 2, className: "theme-la-la-land", audio: "assets/audio/la-la-land.mp3" },
@@ -168,8 +169,16 @@ function updateTheme() {
 }
 
 function updateSoundButton() {
-  const status = !soundEnabled ? "выкл" : audioPaused ? "пауза" : "играет";
-  soundToggleButton.textContent = `Музыка: ${status}`;
+  const icon = !soundEnabled || audioPaused ? "▶" : "Ⅱ";
+  const label = !soundEnabled
+    ? "Воспроизвести музыку"
+    : audioPaused
+      ? "Продолжить музыку"
+      : "Поставить музыку на паузу";
+
+  soundToggleButton.textContent = icon;
+  soundToggleButton.setAttribute("aria-label", label);
+  soundToggleButton.title = label;
   soundToggleButton.setAttribute("aria-pressed", String(soundEnabled));
 }
 
@@ -190,13 +199,36 @@ function updateTrackTitle() {
 
 function updateBackdrop(themeClass) {
   const backdrop = document.querySelector(".theme-backdrop");
+  const nextBackdrop = document.querySelector(".theme-backdrop-next");
 
-  if (!backdrop || backdrop.dataset.theme === themeClass) {
+  if (!backdrop || !nextBackdrop || backdrop.dataset.theme === themeClass) {
     return;
   }
 
-  backdrop.className = `theme-backdrop ${themeClass}`;
-  backdrop.dataset.theme = themeClass;
+  const targetGradient = getBackdropGradient(themeClass);
+  nextBackdrop.style.background = targetGradient;
+  nextBackdrop.className = `theme-backdrop-next ${themeClass} is-visible`;
+
+  window.setTimeout(() => {
+    backdrop.className = `theme-backdrop ${themeClass}`;
+    backdrop.dataset.theme = themeClass;
+    nextBackdrop.className = "theme-backdrop-next";
+  }, 820);
+}
+
+function getBackdropGradient(themeClass) {
+  const gradients = {
+    "theme-la-la-land": "linear-gradient(135deg, rgba(45,65,128,.86), rgba(241,123,92,.7))",
+    "theme-blade-runner-2049": "linear-gradient(135deg, rgba(234,134,58,.72), rgba(24,73,103,.9))",
+    "theme-drive": "linear-gradient(135deg, rgba(10,32,61,.9), rgba(225,47,58,.72))",
+    "theme-crazy-love": "linear-gradient(135deg, rgba(88,17,46,.88), rgba(219,135,96,.7))",
+    "theme-only-god-forgives": "linear-gradient(135deg, rgba(12,19,33,.92), rgba(157,24,43,.72))",
+    "theme-place-beyond-the-pines": "linear-gradient(135deg, rgba(15,36,30,.92), rgba(154,122,73,.68))",
+    "theme-first-man": "linear-gradient(135deg, rgba(7,10,15,.94), rgba(86,98,111,.72))",
+    "theme-barbie": "linear-gradient(135deg, rgba(255,105,180,.82), rgba(255,199,235,.62))",
+  };
+
+  return gradients[themeClass] || gradients["theme-la-la-land"];
 }
 
 function setMusicSource({ startPlayback = false, resetPosition = false } = {}) {
@@ -229,13 +261,49 @@ function rememberMusicPosition() {
   localStorage.setItem(MUSIC_POSITION_KEY, JSON.stringify(positions));
 }
 
+function fadeOutInterval(callback, duration = 450) {
+  const startedVolume = themeAudio.volume;
+  const startedAt = performance.now();
+
+  function step(now) {
+    const progress = Math.min(1, (now - startedAt) / duration);
+    themeAudio.volume = startedVolume * (1 - progress);
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      callback();
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
+function fadeInInterval(duration = 700) {
+  themeAudio.volume = 0;
+  const startedAt = performance.now();
+
+  function step(now) {
+    const progress = Math.min(1, (now - startedAt) / duration);
+    themeAudio.volume = 0.65 * progress;
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      themeAudio.volume = 0.65;
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
 function applyMusicSource(nextSource, startPlayback = false, resetPosition = false) {
   themeAudio.loop = musicMode === "themes";
 
   if (!nextSource || themeAudio.dataset.source === nextSource) {
     if (resetPosition) {
       themeAudio.currentTime = 0;
-    } else {
+    } else if (musicMode === "playlist") {
       const position = getMusicPositions()[nextSource];
       if (Number.isFinite(position) && position < themeAudio.duration) {
         themeAudio.currentTime = position;
@@ -254,32 +322,37 @@ function applyMusicSource(nextSource, startPlayback = false, resetPosition = fal
   }
 
   rememberMusicPosition();
-  themeAudio.src = nextSource;
-  themeAudio.dataset.source = nextSource;
+  fadeOutInterval(() => {
+    themeAudio.pause();
+    themeAudio.src = nextSource;
+    themeAudio.dataset.source = nextSource;
+    themeAudio.loop = musicMode === "themes";
+    themeAudio.load();
 
-  let restored = false;
-  const playWhenReady = () => {
-    if (restored) {
-      return;
-    }
+    let restored = false;
+    const playWhenReady = () => {
+      if (restored) {
+        return;
+      }
 
-    restored = true;
-    const position = musicMode === "playlist"
-      ? getMusicPositions()[nextSource]
-      : 0;
+      restored = true;
+      const position = musicMode === "playlist"
+        ? getMusicPositions()[nextSource]
+        : 0;
 
-    if (Number.isFinite(position) && position < themeAudio.duration) {
-      themeAudio.currentTime = position;
-    }
+      if (Number.isFinite(position) && position < themeAudio.duration) {
+        themeAudio.currentTime = position;
+      }
 
-    if (startPlayback || (soundEnabled && !audioPaused)) {
-      themeAudio.play().catch(() => {});
-    }
-  };
+      if (startPlayback || (soundEnabled && !audioPaused)) {
+        themeAudio.play().catch(() => {});
+        fadeInInterval();
+      }
+    };
 
-  themeAudio.addEventListener("loadedmetadata", playWhenReady, { once: true });
-  themeAudio.addEventListener("canplay", playWhenReady, { once: true });
-  themeAudio.load();
+    themeAudio.addEventListener("loadedmetadata", playWhenReady, { once: true });
+    themeAudio.addEventListener("canplay", playWhenReady, { once: true });
+  });
 }
 
 function formatTime(seconds) {
@@ -476,6 +549,14 @@ function getAnimationSource(rowIndex, columnIndex, value, previousBoard, directi
     return null;
   }
 
+  const destinationKey = `${rowIndex}-${columnIndex}`;
+  const exactSourceValue = previousBoard[rowIndex][columnIndex];
+
+  if (!consumedSources.has(destinationKey) && exactSourceValue === value) {
+    consumedSources.add(destinationKey);
+    return [rowIndex, columnIndex];
+  }
+
   const candidates = [];
   const addCandidate = (row, column) => {
     if (row >= 0 && row < SIZE && column >= 0 && column < SIZE) {
@@ -579,7 +660,7 @@ function renderBoard(previousBoard = null, direction = null) {
 
       if (source) {
         [sourceRow, sourceColumn] = source;
-        shouldAnimate = true;
+        shouldAnimate = sourceRow !== rowIndex || sourceColumn !== columnIndex;
       }
 
       tile.style.setProperty("--row", shouldAnimate ? sourceRow : rowIndex);
@@ -877,6 +958,7 @@ soundToggleButton.addEventListener("click", () => {
   updateSoundButton();
 
   if (soundEnabled && !audioPaused) {
+    themeAudio.volume = 0.65;
     themeAudio.play().catch(() => {});
   } else {
     themeAudio.pause();
