@@ -163,31 +163,100 @@ function saveScore() {
   renderLeaderboard();
 }
 
-function renderBoard() {
+function renderBoard(previousBoard = null) {
   const fragment = document.createDocumentFragment();
+  const consumedSources = new Set();
 
-  board.flat().forEach((value) => {
-    const tile = document.createElement("div");
-    tile.className = "tile";
-    tile.setAttribute("role", "gridcell");
+  for (let index = 0; index < 16; index += 1) {
+    const cell = document.createElement("div");
+    cell.className = "board-cell";
+    cell.setAttribute("aria-hidden", "true");
+    cell.style.setProperty("--row", Math.floor(index / SIZE));
+    cell.style.setProperty("--column", index % SIZE);
+    fragment.appendChild(cell);
+  }
 
-    if (value) {
+  board.forEach((row, rowIndex) => {
+    row.forEach((value, columnIndex) => {
+      if (value === 0) {
+        return;
+      }
+
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.setAttribute("role", "gridcell");
       tile.textContent = value;
       tile.dataset.value = value;
+      tile.dataset.row = rowIndex;
+      tile.dataset.column = columnIndex;
       tile.setAttribute("aria-label", `Плитка ${value}`);
+
+      let sourceRow = rowIndex;
+      let sourceColumn = columnIndex;
+      let shouldAnimate = false;
+
+      if (previousBoard) {
+        if (previousBoard[rowIndex][columnIndex] === value) {
+          shouldAnimate = true;
+        } else {
+          for (let oldRow = 0; oldRow < SIZE && !shouldAnimate; oldRow += 1) {
+            for (let oldColumn = 0; oldColumn < SIZE; oldColumn += 1) {
+              const sourceKey = `${oldRow}-${oldColumn}`;
+              const oldValue = previousBoard[oldRow][oldColumn];
+              const isMergeSource = value > 2 && oldValue === value / 2;
+              const isMovedSource = oldValue === value;
+
+              if (!consumedSources.has(sourceKey) && (isMergeSource || isMovedSource)) {
+                consumedSources.add(sourceKey);
+                sourceRow = oldRow;
+                sourceColumn = oldColumn;
+                shouldAnimate = oldRow !== rowIndex || oldColumn !== columnIndex;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      tile.style.setProperty("--row", shouldAnimate ? sourceRow : rowIndex);
+      tile.style.setProperty("--column", shouldAnimate ? sourceColumn : columnIndex);
 
       const [background, color] = tileColors[value] || ["#3c3a32", "#f9f6f2"];
       tile.style.backgroundColor = background;
       tile.style.color = color;
-    } else {
-      tile.setAttribute("aria-label", "Пустая клетка");
-    }
 
-    fragment.appendChild(tile);
+      if (shouldAnimate) {
+        tile.classList.add("tile-moving");
+        tile.classList.add("tile-entering");
+      } else if (!previousBoard || previousBoard[rowIndex][columnIndex] === 0) {
+        tile.classList.add("tile-entering");
+      }
+      fragment.appendChild(tile);
+    });
   });
 
   boardElement.replaceChildren(fragment);
   undoButton.disabled = previousState === null || gameOver;
+
+  if (previousBoard) {
+    requestAnimationFrame(() => {
+      board.forEach((row, rowIndex) => {
+        row.forEach((value, columnIndex) => {
+          if (value) {
+            const tile = boardElement.querySelector(
+              `.tile[data-row="${rowIndex}"][data-column="${columnIndex}"]`
+            );
+
+            if (tile) {
+              tile.style.setProperty("--row", rowIndex);
+              tile.style.setProperty("--column", columnIndex);
+              tile.classList.remove("tile-moving");
+            }
+          }
+        });
+      });
+    });
+  }
 }
 
 function addRandomTile() {
@@ -280,7 +349,7 @@ function move(direction) {
   };
   score += gainedScore;
   addRandomTile();
-  renderBoard();
+  renderBoard(JSON.parse(previousBoard));
   updateScore();
   saveGameState();
 
@@ -341,7 +410,7 @@ function startNewGame() {
   previousState = null;
   scoreSaved = false;
   gameOverModal.hidden = true;
-  mobileControls.hidden = false;
+  mobileControls.hidden = gameOver;
   addRandomTile();
   addRandomTile();
   renderBoard();
@@ -373,6 +442,34 @@ mobileControls.addEventListener("click", (event) => {
     move(button.dataset.direction);
   }
 });
+
+let touchStart = null;
+
+boardElement.addEventListener("touchstart", (event) => {
+  const touch = event.changedTouches[0];
+  touchStart = { x: touch.clientX, y: touch.clientY };
+}, { passive: true });
+
+boardElement.addEventListener("touchend", (event) => {
+  if (!touchStart) {
+    return;
+  }
+
+  const touch = event.changedTouches[0];
+  const deltaX = touch.clientX - touchStart.x;
+  const deltaY = touch.clientY - touchStart.y;
+  touchStart = null;
+
+  if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 30) {
+    return;
+  }
+
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    move(deltaX > 0 ? "right" : "left");
+  } else {
+    move(deltaY > 0 ? "down" : "up");
+  }
+}, { passive: true });
 
 newGameButton.addEventListener("click", startNewGame);
 undoButton.addEventListener("click", undoMove);

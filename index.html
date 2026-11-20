@@ -31,18 +31,17 @@
         <button class="action-button" id="new-game" type="button">Новая игра</button>
         <button class="action-button" id="undo" type="button" disabled>Отмена хода</button>
         <button class="action-button" id="leaderboard-button" type="button">Лидеры на этом устройстве</button>
+        <nav class="mobile-controls" aria-label="Управление" hidden>
+          <button type="button" data-direction="up" aria-label="Вверх">↑</button>
+          <button type="button" data-direction="left" aria-label="Влево">←</button>
+          <button type="button" data-direction="down" aria-label="Вниз">↓</button>
+          <button type="button" data-direction="right" aria-label="Вправо">→</button>
+        </nav>
       </aside>
 
       <section class="board-wrap" aria-label="Игровое поле 2048">
         <div id="game-board" class="game-board" role="grid" aria-label="Сетка 4 на 4"></div>
       </section>
-
-      <nav class="mobile-controls" aria-label="Управление" hidden>
-        <button type="button" data-direction="up" aria-label="Вверх">↑</button>
-        <button type="button" data-direction="left" aria-label="Влево">←</button>
-        <button type="button" data-direction="down" aria-label="Вниз">↓</button>
-        <button type="button" data-direction="right" aria-label="Вправо">→</button>
-      </nav>
     </section>
   </main>
 
