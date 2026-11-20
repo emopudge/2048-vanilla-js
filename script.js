@@ -138,9 +138,11 @@ function updateTheme() {
   const activeTheme = getActiveTheme();
   const activeIndex = themes.indexOf(activeTheme);
   const nextTheme = themes[activeIndex + 1];
+  const themeChanged = document.body.dataset.activeTheme !== activeTheme.className;
 
   document.body.classList.remove(...themes.map((theme) => theme.className));
   document.body.classList.add(activeTheme.className);
+  document.body.dataset.activeTheme = activeTheme.className;
   updateBackdrop(activeTheme.className);
   currentThemeElement.textContent = activeTheme.title;
   localStorage.setItem(THEME_KEY, activeTheme.className);
@@ -162,7 +164,7 @@ function updateTheme() {
     : activeTheme.audio;
 
   updateTrackTitle();
-  applyMusicSource(nextSource);
+  applyMusicSource(nextSource, false, themeChanged);
 }
 
 function updateSoundButton() {
@@ -197,13 +199,13 @@ function updateBackdrop(themeClass) {
   backdrop.dataset.theme = themeClass;
 }
 
-function setMusicSource({ startPlayback = false } = {}) {
+function setMusicSource({ startPlayback = false, resetPosition = false } = {}) {
   const activeTheme = getActiveTheme();
   const nextSource = musicMode === "playlist"
     ? playlistTracks[playlistTrack]
     : activeTheme.audio;
 
-  applyMusicSource(nextSource, startPlayback);
+  applyMusicSource(nextSource, startPlayback, resetPosition);
 }
 
 function getMusicPositions() {
@@ -227,10 +229,19 @@ function rememberMusicPosition() {
   localStorage.setItem(MUSIC_POSITION_KEY, JSON.stringify(positions));
 }
 
-function applyMusicSource(nextSource, startPlayback = false) {
+function applyMusicSource(nextSource, startPlayback = false, resetPosition = false) {
   themeAudio.loop = musicMode === "themes";
 
   if (!nextSource || themeAudio.dataset.source === nextSource) {
+    if (resetPosition) {
+      themeAudio.currentTime = 0;
+    } else {
+      const position = getMusicPositions()[nextSource];
+      if (Number.isFinite(position) && position < themeAudio.duration) {
+        themeAudio.currentTime = position;
+      }
+    }
+
     if (startPlayback) {
       soundEnabled = true;
       audioPaused = false;
@@ -253,7 +264,9 @@ function applyMusicSource(nextSource, startPlayback = false) {
     }
 
     restored = true;
-    const position = getMusicPositions()[nextSource];
+    const position = musicMode === "playlist"
+      ? getMusicPositions()[nextSource]
+      : 0;
 
     if (Number.isFinite(position) && position < themeAudio.duration) {
       themeAudio.currentTime = position;
@@ -879,7 +892,10 @@ musicModeSelect.addEventListener("change", () => {
   localStorage.setItem(MUSIC_PAUSED_KEY, "false");
   updateMusicControls();
   updateSoundButton();
-  setMusicSource({ startPlayback: true });
+  setMusicSource({
+    startPlayback: true,
+    resetPosition: musicMode === "themes",
+  });
 });
 
 playlistTrackSelect.addEventListener("change", () => {
