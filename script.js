@@ -460,16 +460,6 @@ function applyTileImage(tile, value) {
   }
 }
 
-function finalizeMergedTile(tile, mergeValue) {
-  tile.textContent = String(mergeValue);
-  tile.dataset.value = String(mergeValue);
-  tile.setAttribute("aria-label", `Плитка ${mergeValue}`);
-  applyTileImage(tile, mergeValue);
-  tile.classList.remove("tile-merging");
-  tile.classList.add("tile-merge-complete");
-  window.requestAnimationFrame(() => tile.classList.remove("tile-merge-complete"));
-}
-
 function updateScore() {
   scoreElement.textContent = score;
 
@@ -865,7 +855,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
       const tile = document.createElement("div");
       tile.className = "tile";
       tile.setAttribute("role", "gridcell");
-      const displayValue = mergingValue ? mergingValue / 2 : value;
+      const displayValue = mergingValue || value;
       tile.textContent = String(displayValue);
       tile.dataset.value = String(displayValue);
       tile.dataset.row = rowIndex;
@@ -906,8 +896,8 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         const duplicate = document.createElement("div");
         duplicate.className = "tile tile-moving tile-merging";
         duplicate.setAttribute("role", "gridcell");
-        duplicate.textContent = String(merge.value / 2);
-        duplicate.dataset.value = String(merge.value / 2);
+        duplicate.textContent = String(merge.value);
+        duplicate.dataset.value = String(merge.value);
         duplicate.dataset.row = targetRow;
         duplicate.dataset.column = targetColumn;
         duplicate.dataset.sourceRow = sourceRow;
@@ -916,7 +906,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         duplicate.style.setProperty("--row", sourceRow);
         duplicate.style.setProperty("--column", sourceColumn);
         duplicate.style.zIndex = "20";
-        applyTileImage(duplicate, merge.value / 2);
+        applyTileImage(duplicate, merge.value);
         fragment.appendChild(duplicate);
       });
     });
@@ -936,6 +926,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
           duplicate.style.setProperty("--row", duplicate.dataset.row);
           duplicate.style.setProperty("--column", duplicate.dataset.column);
           duplicate.addEventListener("transitionend", () => duplicate.remove(), { once: true });
+          window.setTimeout(() => duplicate.remove(), 320);
         });
 
         board.forEach((row, rowIndex) => {
@@ -950,17 +941,9 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
                 tile.style.setProperty("--column", columnIndex);
                 tile.classList.remove("tile-moving");
                 if (tile.dataset.mergeTarget === "true") {
-                  const mergeValue = Number(tile.dataset.mergeValue);
-                  if (tile.dataset.wasMoving === "true") {
-                    const finalizeAfterMove = () => {
-                      tile.removeEventListener("transitionend", finalizeAfterMove);
-                      finalizeMergedTile(tile, mergeValue);
-                    };
-                    tile.addEventListener("transitionend", finalizeAfterMove);
-                    window.setTimeout(() => finalizeMergedTile(tile, mergeValue), 360);
-                  } else {
-                    finalizeMergedTile(tile, mergeValue);
-                  }
+                  tile.classList.remove("tile-merging");
+                  tile.classList.add("tile-merge-complete");
+                  window.setTimeout(() => tile.classList.remove("tile-merge-complete"), 180);
                 }
               }
             }
