@@ -37,6 +37,7 @@ const MUSIC_POSITION_KEY = "gosling-2048-music-position";
 const MUSIC_PAUSED_KEY = "gosling-2048-music-paused";
 const DISCOVERED_VALUES_KEY = "gosling-2048-discovered-values";
 const DEFAULT_VOLUME = 0.65;
+const TILE_ANIMATION_MS = 320;
 function safeGet(key) {
   try {
     return localStorage.getItem(key);
@@ -64,6 +65,7 @@ let playlistTrack = safeGet(PLAYLIST_TRACK_KEY) || "la-la-land";
 let audioPaused = safeGet(MUSIC_PAUSED_KEY) === "true";
 let audioFadeToken = 0;
 let discoveredValues = new Set([2]);
+let isAnimating = false;
 
 const themes = [
   { title: "Ла-Ла Ленд", threshold: 2, className: "theme-la-la-land", audio: "assets/audio/la-la-land.mp3" },
@@ -796,7 +798,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         duplicate.style.setProperty("--row", duplicate.dataset.row);
         duplicate.style.setProperty("--column", duplicate.dataset.column);
         duplicate.addEventListener("transitionend", () => duplicate.remove(), { once: true });
-        window.setTimeout(() => duplicate.remove(), 320);
+        window.setTimeout(() => duplicate.remove(), TILE_ANIMATION_MS);
       });
 
       snapshotBoard.forEach((row, rowIndex) => {
@@ -819,14 +821,14 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
               window.setTimeout(() => {
                 tile.classList.remove("tile-moving");
                 tile.classList.remove("tile-merging");
-              }, 320);
+              }, TILE_ANIMATION_MS);
             }
           }
         });
       });
 
       if (previousLayer) {
-        window.setTimeout(() => previousLayer.remove(), 320);
+        window.setTimeout(() => previousLayer.remove(), TILE_ANIMATION_MS);
       }
     });
   }
@@ -887,7 +889,7 @@ function setColumn(columnIndex, values) {
 }
 
 function move(direction) {
-  if (gameOver) {
+  if (gameOver || isAnimating) {
     return;
   }
 
@@ -932,6 +934,10 @@ function move(direction) {
   });
   rememberDiscoveredValues(newlyDiscoveredValues);
   renderBoard(JSON.parse(previousBoard), direction, newlyDiscoveredValues);
+  isAnimating = true;
+  window.setTimeout(() => {
+    isAnimating = false;
+  }, TILE_ANIMATION_MS);
   updateTheme();
   updateScore();
   saveGameState();
