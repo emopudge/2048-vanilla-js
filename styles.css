@@ -375,7 +375,7 @@ h2 {
 
 .tile {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   --column: 0;
   --row: 0;
   width: calc((100% - 3 * var(--board-gap)) / 4);
@@ -393,9 +393,9 @@ h2 {
   font-size: clamp(1rem, 2.4vw, 1.8rem);
   font-weight: 700;
   line-height: 1;
-  transition: left 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    top 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    background-color 180ms ease, color 180ms ease;
+  transition: left 280ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    top 280ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    background-color 180ms ease, color 180ms ease, transform 220ms ease;
 }
 
 .tile.tile-with-image {
@@ -411,8 +411,6 @@ h2 {
 
 .tile-moving {
   z-index: 12;
-  will-change: left, top;
-  transform: translateZ(0);
 }
 
 .tile-merging {

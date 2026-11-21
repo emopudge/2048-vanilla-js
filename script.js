@@ -65,7 +65,6 @@ let playlistTrack = safeGet(PLAYLIST_TRACK_KEY) || "la-la-land";
 let audioPaused = safeGet(MUSIC_PAUSED_KEY) === "true";
 let audioFadeToken = 0;
 let discoveredValues = new Set([2]);
-let isAnimating = false;
 
 const themes = [
   { title: "Ла-Ла Ленд", threshold: 2, className: "theme-la-la-land", audio: "assets/audio/la-la-land.mp3" },
@@ -552,14 +551,29 @@ function saveScore() {
   renderLeaderboard();
 }
 
-function findMoveSource(rowIndex, columnIndex, value, previousBoard, direction, consumedSources) {
+function getAnimationSource(rowIndex, columnIndex, value, previousBoard, direction, consumedSources, mergePlan) {
   if (!previousBoard || !direction) {
     return null;
   }
 
-  if (previousBoard[rowIndex][columnIndex] === value
-    && !consumedSources.has(`${rowIndex}-${columnIndex}`)) {
-    consumedSources.add(`${rowIndex}-${columnIndex}`);
+  const destinationKey = `${rowIndex}-${columnIndex}`;
+  const exactSourceValue = previousBoard[rowIndex][columnIndex];
+  const merge = mergePlan?.get(destinationKey);
+
+  if (merge) {
+    const source = merge.sources.find(([row, column]) =>
+      !consumedSources.has(`${row}-${column}`)
+    );
+    if (source) {
+      merge.sources.forEach(([row, column]) => {
+        consumedSources.add(`${row}-${column}`);
+      });
+      return source;
+    }
+  }
+
+  if (!consumedSources.has(destinationKey) && exactSourceValue === value) {
+    consumedSources.add(destinationKey);
     return [rowIndex, columnIndex];
   }
 
@@ -575,7 +589,7 @@ function findMoveSource(rowIndex, columnIndex, value, previousBoard, direction, 
   }
 
   const source = candidates.find(([row, column]) =>
-    previousBoard[row][column] === value
+    (previousBoard[row][column] === value || previousBoard[row][column] === value / 2)
     && !consumedSources.has(`${row}-${column}`)
   );
 
@@ -705,7 +719,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         [sourceRow, sourceColumn] = targetMerge.sources[0];
         shouldAnimate = sourceRow !== rowIndex || sourceColumn !== columnIndex;
       } else {
-        const source = findMoveSource(
+        const source = getAnimationSource(
           rowIndex,
           columnIndex,
           value,
@@ -889,7 +903,7 @@ function setColumn(columnIndex, values) {
 }
 
 function move(direction) {
-  if (gameOver || isAnimating) {
+  if (gameOver) {
     return;
   }
 
@@ -937,10 +951,6 @@ function move(direction) {
   });
   rememberDiscoveredValues(newlyDiscoveredValues);
   renderBoard(JSON.parse(previousBoard), direction, newlyDiscoveredValues);
-  isAnimating = true;
-  window.setTimeout(() => {
-    isAnimating = false;
-  }, TILE_ANIMATION_MS);
   updateTheme();
   updateScore();
   saveGameState();
