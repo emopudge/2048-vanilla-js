@@ -50,46 +50,6 @@ html {
   opacity: 1;
 }
 
-.theme-backdrop.theme-la-la-land,
-body.theme-la-la-land {
-  --theme-backdrop: linear-gradient(135deg, rgba(45, 65, 128, 0.86), rgba(241, 123, 92, 0.7));
-}
-
-.theme-backdrop.theme-blade-runner-2049,
-body.theme-blade-runner-2049 {
-  --theme-backdrop: linear-gradient(135deg, rgba(234, 134, 58, 0.72), rgba(24, 73, 103, 0.9));
-}
-
-.theme-backdrop.theme-drive,
-body.theme-drive {
-  --theme-backdrop: linear-gradient(135deg, rgba(10, 32, 61, 0.9), rgba(225, 47, 58, 0.72));
-}
-
-.theme-backdrop.theme-crazy-love,
-body.theme-crazy-love {
-  --theme-backdrop: linear-gradient(135deg, rgba(88, 17, 46, 0.88), rgba(219, 135, 96, 0.7));
-}
-
-.theme-backdrop.theme-only-god-forgives,
-body.theme-only-god-forgives {
-  --theme-backdrop: linear-gradient(135deg, rgba(12, 19, 33, 0.92), rgba(157, 24, 43, 0.72));
-}
-
-.theme-backdrop.theme-place-beyond-the-pines,
-body.theme-place-beyond-the-pines {
-  --theme-backdrop: linear-gradient(135deg, rgba(15, 36, 30, 0.92), rgba(154, 122, 73, 0.68));
-}
-
-.theme-backdrop.theme-first-man,
-body.theme-first-man {
-  --theme-backdrop: linear-gradient(135deg, rgba(7, 10, 15, 0.94), rgba(86, 98, 111, 0.72));
-}
-
-.theme-backdrop.theme-barbie,
-body.theme-barbie {
-  --theme-backdrop: linear-gradient(135deg, rgba(255, 105, 180, 0.82), rgba(255, 199, 235, 0.62));
-}
-
 .theme-backdrop.theme-la-la-land {
   background: linear-gradient(135deg, rgba(45, 65, 128, 0.86), rgba(241, 123, 92, 0.7));
 }
@@ -444,10 +404,9 @@ h2 {
   font-size: clamp(1rem, 2.4vw, 1.8rem);
   font-weight: 700;
   line-height: 1;
-  will-change: left, top;
   transition: left 280ms cubic-bezier(0.22, 0.61, 0.36, 1),
     top 280ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    background-color 180ms ease, color 180ms ease, transform 220ms ease;
+    background-color 180ms ease, color 180ms ease;
 }
 
 .tile[data-value] {
@@ -457,36 +416,21 @@ h2 {
 .tile.tile-with-image {
   background-size: cover;
   background-position: center;
-  color: #fff !important;
+  color: #fff;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.88);
 }
 
 .tile-entering {
-  animation: tile-in 150ms ease-out;
+  animation: tile-in 150ms ease-out forwards;
 }
 
 .tile-moving {
   z-index: 12;
+  will-change: left, top;
 }
 
 .tile-merging {
   z-index: 20;
-}
-
-.tile-merge-complete {
-  animation: merge-complete 180ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes merge-complete {
-  0% {
-    filter: none;
-  }
-  50% {
-    filter: none;
-  }
-  100% {
-    filter: none;
-  }
 }
 
 .tile-new-value {
@@ -509,15 +453,15 @@ h2 {
 @keyframes new-value-border {
   0% {
     opacity: 1;
-    border-width: 4px;
+    transform: scale(1.04);
   }
   55% {
     opacity: 0.82;
-    border-width: 3px;
+    transform: scale(1.02);
   }
   100% {
     opacity: 0;
-    border-width: 0;
+    transform: scale(1);
   }
 }
 
@@ -637,7 +581,6 @@ th {
   margin-top: 10px;
   grid-template-columns: repeat(3, 46px);
   grid-template-rows: repeat(2, 46px);
-  gap: 6px;
   justify-content: center;
   gap: 8px;
 }

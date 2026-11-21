@@ -920,17 +920,17 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
               if (tile) {
                 tile.style.setProperty("--row", rowIndex);
                 tile.style.setProperty("--column", columnIndex);
-                tile.classList.remove("tile-moving");
                 if (tile.dataset.mergeTarget === "true") {
                   const mergedValue = Number(tile.dataset.mergeValue);
                   tile.textContent = String(mergedValue);
                   tile.dataset.value = String(mergedValue);
                   tile.setAttribute("aria-label", `Плитка ${mergedValue}`);
                   applyTileImage(tile, mergedValue);
-                  tile.classList.remove("tile-merging");
-                  tile.classList.add("tile-merge-complete");
-                  window.setTimeout(() => tile.classList.remove("tile-merge-complete"), 180);
                 }
+                window.setTimeout(() => {
+                  tile.classList.remove("tile-moving");
+                  tile.classList.remove("tile-merging");
+                }, 320);
               }
             }
           });
