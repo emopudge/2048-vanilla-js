@@ -39,21 +39,6 @@ html {
   transition: opacity 800ms ease;
 }
 
-.theme-backdrop-next {
-  position: fixed;
-  z-index: -1;
-  inset: 0;
-  opacity: 0;
-  background: #17191d;
-  background-size: cover;
-  background-position: center;
-  transition: opacity 800ms ease;
-}
-
-.theme-backdrop-next.is-visible {
-  opacity: 1;
-}
-
 .theme-backdrop.theme-la-la-land {
   background: linear-gradient(135deg, rgba(45, 65, 128, 0.86), rgba(241, 123, 92, 0.7));
 }
