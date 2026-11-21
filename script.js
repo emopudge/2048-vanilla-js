@@ -168,6 +168,11 @@ function updateTheme() {
   document.body.classList.add(activeTheme.className);
   document.body.dataset.activeTheme = activeTheme.className;
   document.body.dataset.theme = activeTheme.className;
+  const backdrop = document.querySelector(".theme-backdrop");
+  if (backdrop) {
+    backdrop.className = `theme-backdrop ${activeTheme.className}`;
+    backdrop.dataset.theme = activeTheme.className;
+  }
   currentThemeElement.textContent = activeTheme.title;
 
   if (nextTheme) {
@@ -798,15 +803,20 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
   }
 
   tileLayer.replaceChildren(fragment);
+  if (previousBoard) {
+    void tileLayer.offsetWidth;
+  }
   undoButton.disabled = previousState === null || gameOver;
 
   if (previousBoard) {
     requestAnimationFrame(() => {
-      if (previousLayer) {
-        previousLayer.style.visibility = "hidden";
-      }
+      void tileLayer.offsetWidth;
 
       requestAnimationFrame(() => {
+        if (previousLayer) {
+          previousLayer.style.visibility = "hidden";
+        }
+
         tileLayer.querySelectorAll(".tile[data-source-row]").forEach((duplicate) => {
           duplicate.style.setProperty("--row", duplicate.dataset.row);
           duplicate.style.setProperty("--column", duplicate.dataset.column);
