@@ -785,49 +785,49 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
   undoButton.disabled = previousState === null || gameOver;
 
   if (previousBoard) {
+    void tileLayer.offsetWidth;
+
     requestAnimationFrame(() => {
       if (previousLayer) {
         previousLayer.style.visibility = "hidden";
       }
 
-      requestAnimationFrame(() => {
-        tileLayer.querySelectorAll(".tile[data-source-row]").forEach((duplicate) => {
-          duplicate.style.setProperty("--row", duplicate.dataset.row);
-          duplicate.style.setProperty("--column", duplicate.dataset.column);
-          duplicate.addEventListener("transitionend", () => duplicate.remove(), { once: true });
-          window.setTimeout(() => duplicate.remove(), 320);
-        });
-
-        snapshotBoard.forEach((row, rowIndex) => {
-          row.forEach((value, columnIndex) => {
-            if (value) {
-              const tile = tileLayer.querySelector(
-                `.tile[data-row="${rowIndex}"][data-column="${columnIndex}"]`
-              );
-
-              if (tile) {
-                tile.style.setProperty("--row", rowIndex);
-                tile.style.setProperty("--column", columnIndex);
-                if (tile.dataset.mergeTarget === "true") {
-                  const mergedValue = Number(tile.dataset.mergeValue);
-                  tile.textContent = String(mergedValue);
-                  tile.dataset.value = String(mergedValue);
-                  tile.setAttribute("aria-label", `Плитка ${mergedValue}`);
-                  applyTileImage(tile, mergedValue);
-                }
-                window.setTimeout(() => {
-                  tile.classList.remove("tile-moving");
-                  tile.classList.remove("tile-merging");
-                }, 320);
-              }
-            }
-          });
-        });
-
-        if (previousLayer) {
-          window.setTimeout(() => previousLayer.remove(), 320);
-        }
+      tileLayer.querySelectorAll(".tile[data-source-row]").forEach((duplicate) => {
+        duplicate.style.setProperty("--row", duplicate.dataset.row);
+        duplicate.style.setProperty("--column", duplicate.dataset.column);
+        duplicate.addEventListener("transitionend", () => duplicate.remove(), { once: true });
+        window.setTimeout(() => duplicate.remove(), 320);
       });
+
+      snapshotBoard.forEach((row, rowIndex) => {
+        row.forEach((value, columnIndex) => {
+          if (value) {
+            const tile = tileLayer.querySelector(
+              `.tile[data-row="${rowIndex}"][data-column="${columnIndex}"]`
+            );
+
+            if (tile) {
+              tile.style.setProperty("--row", rowIndex);
+              tile.style.setProperty("--column", columnIndex);
+              if (tile.dataset.mergeTarget === "true") {
+                const mergedValue = Number(tile.dataset.mergeValue);
+                tile.textContent = String(mergedValue);
+                tile.dataset.value = String(mergedValue);
+                tile.setAttribute("aria-label", `Плитка ${mergedValue}`);
+                applyTileImage(tile, mergedValue);
+              }
+              window.setTimeout(() => {
+                tile.classList.remove("tile-moving");
+                tile.classList.remove("tile-merging");
+              }, 320);
+            }
+          }
+        });
+      });
+
+      if (previousLayer) {
+        window.setTimeout(() => previousLayer.remove(), 320);
+      }
     });
   }
 }

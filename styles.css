@@ -412,6 +412,7 @@ h2 {
 .tile-moving {
   z-index: 12;
   will-change: left, top;
+  transform: translateZ(0);
 }
 
 .tile-merging {
