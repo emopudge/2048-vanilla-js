@@ -689,12 +689,13 @@ th {
 
   :root {
     --board-gap: 8px;
-    --board-size: min(calc(100vw - 32px), calc(100svh - 340px), 520px);
+    --board-size: min(calc(100vw - 32px), 520px);
   }
 
   .theme-strip {
     position: relative;
     z-index: 15;
+    flex: 0 0 auto;
     margin-bottom: 6px;
     grid-template-columns: 1fr auto;
     gap: 8px;
@@ -768,8 +769,11 @@ th {
   }
 
   .game-layout {
+    flex: 0 0 auto;
+    width: 100%;
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 8px;
+    margin-top: 6px;
     z-index: 1;
   }
 
@@ -785,21 +789,12 @@ th {
   }
 
   .mobile-controls {
-    order: 2;
-    width: 198px;
-    margin: 4px auto 0;
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(3, 48px);
-    grid-template-rows: repeat(2, 48px);
+    display: none !important;
   }
 
   .game-actions .action-button {
     min-width: 0;
     padding: 8px 4px;
-  }
-
-  .mobile-controls {
-    display: grid;
   }
 
   .modal-card {
