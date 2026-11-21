@@ -491,7 +491,7 @@ function getLeaderboard() {
 }
 
 function renderLeaderboard() {
-  const leaderboard = getLeaderboard();
+  const leaderboard = getLeaderboard().slice(0, 10);
   const fragment = document.createDocumentFragment();
 
   if (leaderboard.length === 0) {
@@ -543,7 +543,7 @@ function saveScore() {
   leaderboard.push({ name, score, date, submittedAt: submittedAt.toISOString() });
   leaderboard.sort((a, b) => b.score - a.score
     || new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
-  leaderboard.splice(50);
+  leaderboard.splice(10);
 
   safeSet(LEADERBOARD_KEY, JSON.stringify(leaderboard));
   scoreSaved = true;
@@ -651,6 +651,60 @@ function buildMergePlan(previousBoard, direction) {
   }
 
   return mergePlan;
+}
+
+function animateTileTo(tile, destinationRow, destinationColumn, onComplete = null) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    tile.style.setProperty("--row", destinationRow);
+    tile.style.setProperty("--column", destinationColumn);
+    if (onComplete) {
+      onComplete();
+    }
+    return;
+  }
+
+  const sourceRect = tile.getBoundingClientRect();
+  const sourceRow = tile.style.getPropertyValue("--row");
+  const sourceColumn = tile.style.getPropertyValue("--column");
+
+  tile.style.setProperty("--row", destinationRow);
+  tile.style.setProperty("--column", destinationColumn);
+  const destinationRect = tile.getBoundingClientRect();
+
+  tile.style.setProperty("--row", sourceRow);
+  tile.style.setProperty("--column", sourceColumn);
+  void tile.offsetWidth;
+
+  const deltaX = destinationRect.left - sourceRect.left;
+  const deltaY = destinationRect.top - sourceRect.top;
+
+  if (Math.abs(deltaX) + Math.abs(deltaY) < 1) {
+    if (onComplete) {
+      onComplete();
+    }
+    return;
+  }
+
+  const animation = tile.animate([
+    { transform: "translate3d(0, 0, 0)" },
+    { transform: `translate3d(${deltaX}px, ${deltaY}px, 0)` },
+  ], {
+    duration: TILE_ANIMATION_MS,
+    easing: "cubic-bezier(0.22, 0.61, 0.36, 1)",
+    fill: "forwards",
+  });
+
+  window.setTimeout(() => {
+    animation.cancel();
+    tile.style.transition = "none";
+    tile.style.setProperty("--row", destinationRow);
+    tile.style.setProperty("--column", destinationColumn);
+    void tile.offsetWidth;
+    tile.style.removeProperty("transition");
+    if (onComplete) {
+      onComplete();
+    }
+  }, TILE_ANIMATION_MS);
 }
 
 function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValues = new Set()) {
@@ -787,18 +841,18 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
   undoButton.disabled = previousState === null || gameOver;
 
   if (previousBoard) {
-    void tileLayer.offsetWidth;
-
     requestAnimationFrame(() => {
       if (previousLayer) {
         previousLayer.style.visibility = "hidden";
       }
 
       tileLayer.querySelectorAll(".tile[data-source-row]").forEach((duplicate) => {
-        duplicate.style.setProperty("--row", duplicate.dataset.row);
-        duplicate.style.setProperty("--column", duplicate.dataset.column);
-        duplicate.addEventListener("transitionend", () => duplicate.remove(), { once: true });
-        window.setTimeout(() => duplicate.remove(), TILE_ANIMATION_MS);
+        animateTileTo(
+          duplicate,
+          duplicate.dataset.row,
+          duplicate.dataset.column,
+          () => duplicate.remove()
+        );
       });
 
       snapshotBoard.forEach((row, rowIndex) => {
@@ -809,19 +863,19 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
             );
 
             if (tile) {
-              tile.style.setProperty("--row", rowIndex);
-              tile.style.setProperty("--column", columnIndex);
-              if (tile.dataset.mergeTarget === "true") {
-                const mergedValue = Number(tile.dataset.mergeValue);
-                tile.textContent = String(mergedValue);
-                tile.dataset.value = String(mergedValue);
-                tile.setAttribute("aria-label", `Плитка ${mergedValue}`);
-                applyTileImage(tile, mergedValue);
+              if (tile.classList.contains("tile-moving")) {
+                animateTileTo(tile, rowIndex, columnIndex, () => {
+                  if (tile.dataset.mergeTarget === "true") {
+                    const mergedValue = Number(tile.dataset.mergeValue);
+                    tile.textContent = String(mergedValue);
+                    tile.dataset.value = String(mergedValue);
+                    tile.setAttribute("aria-label", `Плитка ${mergedValue}`);
+                    applyTileImage(tile, mergedValue);
+                  }
+                  tile.classList.remove("tile-moving");
+                  tile.classList.remove("tile-merging");
+                });
               }
-              window.setTimeout(() => {
-                tile.classList.remove("tile-moving");
-                tile.classList.remove("tile-merging");
-              }, TILE_ANIMATION_MS);
             }
           }
         });
@@ -927,6 +981,9 @@ function move(direction) {
   score += gainedScore;
   const newlyDiscoveredValues = new Set();
   addRandomTile();
+  if (Math.random() < 0.25) {
+    addRandomTile();
+  }
   board.flat().forEach((value) => {
     if (value && !discoveredValues.has(value)) {
       newlyDiscoveredValues.add(value);

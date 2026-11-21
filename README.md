@@ -60,7 +60,7 @@
 
 - `gosling-2048-game-state` — состояние и счёт партии;
 - `gosling-2048-best-score` — лучший результат;
-- `gosling-2048-leaderboard` — записи таблицы лидеров;
+- `gosling-2048-leaderboard` — топ-10 записей таблицы лидеров;
 - `gosling-2048-discovered-values` — впервые открытые значения плиток;
 - `gosling-2048-sound` и `gosling-2048-music-paused` — состояние звука;
 - `gosling-2048-music-mode` — режим музыки;
