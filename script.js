@@ -38,15 +38,31 @@ const PLAYLIST_TRACK_KEY = "gosling-2048-playlist-track";
 const MUSIC_POSITION_KEY = "gosling-2048-music-position";
 const MUSIC_PAUSED_KEY = "gosling-2048-music-paused";
 const DISCOVERED_VALUES_KEY = "gosling-2048-discovered-values";
+function safeGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    return;
+  }
+}
+
 let board = [];
 let score = 0;
 let gameOver = false;
 let previousState = null;
 let scoreSaved = false;
-let soundEnabled = localStorage.getItem(SOUND_KEY) === "true";
-let musicMode = localStorage.getItem(MUSIC_MODE_KEY) || "themes";
-let playlistTrack = localStorage.getItem(PLAYLIST_TRACK_KEY) || "la-la-land";
-let audioPaused = localStorage.getItem(MUSIC_PAUSED_KEY) === "true";
+let soundEnabled = safeGet(SOUND_KEY) === "true";
+let musicMode = safeGet(MUSIC_MODE_KEY) || "themes";
+let playlistTrack = safeGet(PLAYLIST_TRACK_KEY) || "la-la-land";
+let audioPaused = safeGet(MUSIC_PAUSED_KEY) === "true";
 let audioFadeToken = 0;
 let discoveredValues = new Set([2]);
 
@@ -126,7 +142,7 @@ function createEmptyBoard() {
 }
 
 function getBestScore() {
-  return Number(localStorage.getItem(BEST_SCORE_KEY)) || 0;
+  return Number(safeGet(BEST_SCORE_KEY)) || 0;
 }
 
 function getMaxTile() {
@@ -158,7 +174,7 @@ function updateTheme() {
   document.body.dataset.activeTheme = activeTheme.className;
   updateBackdrop(activeTheme.className);
   currentThemeElement.textContent = activeTheme.title;
-  localStorage.setItem(THEME_KEY, activeTheme.className);
+  safeSet(THEME_KEY, activeTheme.className);
 
   if (nextTheme) {
     const previousThreshold = activeTheme.threshold;
@@ -255,7 +271,7 @@ function setMusicSource({ startPlayback = false, resetPosition = false } = {}) {
 
 function getMusicPositions() {
   try {
-    const positions = JSON.parse(localStorage.getItem(MUSIC_POSITION_KEY) || "{}");
+    const positions = JSON.parse(safeGet(MUSIC_POSITION_KEY) || "{}");
     return positions && typeof positions === "object" ? positions : {};
   } catch {
     return {};
@@ -271,7 +287,7 @@ function rememberMusicPosition() {
 
   const positions = getMusicPositions();
   positions[source] = themeAudio.currentTime;
-  localStorage.setItem(MUSIC_POSITION_KEY, JSON.stringify(positions));
+  safeSet(MUSIC_POSITION_KEY, JSON.stringify(positions));
 }
 
 function fadeOutInterval(callback, duration = 450, fadeToken = ++audioFadeToken) {
@@ -332,8 +348,8 @@ function applyMusicSource(nextSource, startPlayback = false, resetPosition = fal
     if (startPlayback) {
       soundEnabled = true;
       audioPaused = false;
-      localStorage.setItem(SOUND_KEY, "true");
-      localStorage.setItem(MUSIC_PAUSED_KEY, "false");
+      safeSet(SOUND_KEY, "true");
+      safeSet(MUSIC_PAUSED_KEY, "false");
       themeAudio.play().catch(() => {});
       updateSoundButton();
     }
@@ -396,8 +412,10 @@ function formatTime(seconds) {
 }
 
 function updateMusicProgress() {
-  musicProgress.max = Number.isFinite(themeAudio.duration) ? themeAudio.duration : 0;
-  musicProgress.value = themeAudio.currentTime;
+  if (Number.isFinite(themeAudio.duration)) {
+    musicProgress.max = themeAudio.duration;
+    musicProgress.value = themeAudio.currentTime;
+  }
   musicTime.textContent = `${formatTime(themeAudio.currentTime)} / ${formatTime(themeAudio.duration)}`;
 }
 
@@ -410,14 +428,16 @@ themeAudio.addEventListener("ended", () => {
   const currentIndex = tracks.indexOf(playlistTrack);
   playlistTrack = tracks[(currentIndex + 1) % tracks.length];
   playlistTrackSelect.value = playlistTrack;
-  localStorage.setItem(PLAYLIST_TRACK_KEY, playlistTrack);
+  safeSet(PLAYLIST_TRACK_KEY, playlistTrack);
   setMusicSource();
 });
 
+let lastSavedSecond = -1;
 themeAudio.addEventListener("timeupdate", () => {
   updateMusicProgress();
-
-  if (Math.floor(themeAudio.currentTime) % 5 === 0) {
+  const second = Math.floor(themeAudio.currentTime);
+  if (second !== lastSavedSecond && second % 5 === 0) {
+    lastSavedSecond = second;
     rememberMusicPosition();
   }
 });
@@ -462,14 +482,14 @@ function updateScore() {
   scoreElement.textContent = score;
 
   if (score > getBestScore()) {
-    localStorage.setItem(BEST_SCORE_KEY, String(score));
+    safeSet(BEST_SCORE_KEY, String(score));
   }
 
   bestScoreElement.textContent = getBestScore();
 }
 
 function saveGameState() {
-  localStorage.setItem(GAME_STATE_KEY, JSON.stringify({
+  safeSet(GAME_STATE_KEY, JSON.stringify({
     board,
     score,
     gameOver,
@@ -477,7 +497,7 @@ function saveGameState() {
 }
 
 function getSavedGameState() {
-  const savedState = localStorage.getItem(GAME_STATE_KEY);
+  const savedState = safeGet(GAME_STATE_KEY);
 
   if (!savedState) {
     return null;
@@ -504,7 +524,7 @@ function getSavedGameState() {
 
 function loadDiscoveredValues() {
   try {
-    const savedValues = JSON.parse(localStorage.getItem(DISCOVERED_VALUES_KEY) || "[2]");
+    const savedValues = JSON.parse(safeGet(DISCOVERED_VALUES_KEY) || "[2]");
     discoveredValues = new Set(Array.isArray(savedValues) ? savedValues : [2]);
   } catch {
     discoveredValues = new Set([2]);
@@ -528,12 +548,12 @@ function rememberDiscoveredValues(values) {
   });
 
   if (changed) {
-    localStorage.setItem(DISCOVERED_VALUES_KEY, JSON.stringify([...discoveredValues]));
+    safeSet(DISCOVERED_VALUES_KEY, JSON.stringify([...discoveredValues]));
   }
 }
 
 function getLeaderboard() {
-  const savedLeaderboard = localStorage.getItem(LEADERBOARD_KEY);
+  const savedLeaderboard = safeGet(LEADERBOARD_KEY);
 
   if (!savedLeaderboard) {
     return [];
@@ -582,6 +602,9 @@ function saveScore() {
   if (scoreSaved) {
     return;
   }
+  if (score <= 0) {
+    return;
+  }
 
   const name = playerNameInput.value.trim() || "Аноним";
   const leaderboard = getLeaderboard();
@@ -595,9 +618,11 @@ function saveScore() {
   }).format(submittedAt);
 
   leaderboard.push({ name, score, date, submittedAt: submittedAt.toISOString() });
-  leaderboard.sort((first, second) => second.score - first.score);
+  leaderboard.sort((a, b) => b.score - a.score
+    || new Date(b.submittedAt) - new Date(a.submittedAt));
+  leaderboard.splice(50);
 
-  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard));
+  safeSet(LEADERBOARD_KEY, JSON.stringify(leaderboard));
   scoreSaved = true;
   saveScoreArea.hidden = true;
   gameOverMessage.textContent = "Ваш рекорд сохранен";
@@ -739,48 +764,6 @@ function buildMergePlan(previousBoard, direction) {
   return mergePlan;
 }
 
-function getMergeSources(rowIndex, columnIndex, value, previousBoard, direction) {
-  if (!previousBoard || value < 4) {
-    return [];
-  }
-
-  const sources = [];
-
-  if (direction === "left" || direction === "right") {
-    for (let column = 0; column < SIZE; column += 1) {
-      if (previousBoard[rowIndex][column] === value / 2) {
-        sources.push([rowIndex, column]);
-      }
-    }
-  } else {
-    for (let row = 0; row < SIZE; row += 1) {
-      if (previousBoard[row][columnIndex] === value / 2) {
-        sources.push([row, columnIndex]);
-      }
-    }
-  }
-
-  if (direction === "left" || direction === "up") {
-    sources.sort((a, b) => (direction === "left" ? a[1] - b[1] : a[0] - b[0]));
-  } else {
-    sources.sort((a, b) => (direction === "right" ? b[1] - a[1] : b[0] - a[0]));
-  }
-
-  const orderedSources = sources.slice(0, 2);
-  const destinationDistance = orderedSources.map(([row, column]) => (
-    direction === "left" ? column - columnIndex
-      : direction === "right" ? columnIndex - column
-        : direction === "up" ? row - rowIndex
-          : rowIndex - row
-  ));
-
-  if (destinationDistance.some((distance) => distance < 0)) {
-    return [];
-  }
-
-  return orderedSources;
-}
-
 function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValues = new Set()) {
   const fragment = document.createDocumentFragment();
   const consumedSources = new Set();
@@ -853,12 +836,12 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
       const tile = document.createElement("div");
       tile.className = "tile";
       tile.setAttribute("role", "gridcell");
-      const displayValue = mergingValue || value;
+      const displayValue = value;
       tile.textContent = String(displayValue);
       tile.dataset.value = String(displayValue);
       tile.dataset.row = rowIndex;
       tile.dataset.column = columnIndex;
-      tile.setAttribute("aria-label", `Плитка ${value}`);
+      tile.setAttribute("aria-label", `Плитка ${displayValue}`);
 
       tile.style.setProperty("--row", shouldAnimate ? sourceRow : rowIndex);
       tile.style.setProperty("--column", shouldAnimate ? sourceColumn : columnIndex);
@@ -874,9 +857,8 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
           tile.classList.add("tile-merging");
           tile.dataset.mergeTarget = "true";
           tile.dataset.mergeValue = String(mergingValue);
-          tile.dataset.wasMoving = String(shouldAnimate);
         }
-      } else if (!previousBoard || previousBoard[rowIndex][columnIndex] === 0) {
+      } else if (!shouldAnimate && (!previousBoard || previousBoard[rowIndex][columnIndex] === 0)) {
         tile.classList.add("tile-entering");
       }
       if (newlyDiscoveredValues.has(value)) {
@@ -894,8 +876,9 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         const duplicate = document.createElement("div");
         duplicate.className = "tile tile-moving tile-merging";
         duplicate.setAttribute("role", "gridcell");
-        duplicate.textContent = String(merge.value);
-        duplicate.dataset.value = String(merge.value);
+        const sourceValue = merge.value / 2;
+        duplicate.textContent = String(sourceValue);
+        duplicate.dataset.value = String(sourceValue);
         duplicate.dataset.row = targetRow;
         duplicate.dataset.column = targetColumn;
         duplicate.dataset.sourceRow = sourceRow;
@@ -904,7 +887,7 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
         duplicate.style.setProperty("--row", sourceRow);
         duplicate.style.setProperty("--column", sourceColumn);
         duplicate.style.zIndex = "20";
-        applyTileImage(duplicate, merge.value);
+        applyTileImage(duplicate, sourceValue);
         fragment.appendChild(duplicate);
       });
     });
@@ -939,6 +922,11 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
                 tile.style.setProperty("--column", columnIndex);
                 tile.classList.remove("tile-moving");
                 if (tile.dataset.mergeTarget === "true") {
+                  const mergedValue = Number(tile.dataset.mergeValue);
+                  tile.textContent = String(mergedValue);
+                  tile.dataset.value = String(mergedValue);
+                  tile.setAttribute("aria-label", `Плитка ${mergedValue}`);
+                  applyTileImage(tile, mergedValue);
                   tile.classList.remove("tile-merging");
                   tile.classList.add("tile-merge-complete");
                   window.setTimeout(() => tile.classList.remove("tile-merge-complete"), 180);
@@ -1091,10 +1079,9 @@ function finishGame() {
   scoreSaved = false;
   saveScoreArea.hidden = false;
   playerNameInput.value = "";
-  gameOverMessage.textContent = "Сохраните свой результат в таблицу лидеров.";
+  gameOverMessage.textContent = "Введите имя, чтобы сохранить результат.";
   mobileControls.hidden = true;
   gameOverModal.hidden = false;
-  renderBoard();
   saveGameState();
 }
 
@@ -1107,6 +1094,7 @@ function undoMove() {
   score = previousState.score;
   previousState = null;
   renderBoard();
+  updateTheme();
   updateScore();
   saveGameState();
 }
@@ -1229,8 +1217,8 @@ soundToggleButton.addEventListener("click", () => {
     audioPaused = !audioPaused;
   }
 
-  localStorage.setItem(SOUND_KEY, String(soundEnabled));
-  localStorage.setItem(MUSIC_PAUSED_KEY, String(audioPaused));
+  safeSet(SOUND_KEY, String(soundEnabled));
+  safeSet(MUSIC_PAUSED_KEY, String(audioPaused));
   updateSoundButton();
 
   if (soundEnabled && !audioPaused) {
@@ -1245,9 +1233,9 @@ musicModeSelect.addEventListener("change", () => {
   musicMode = musicModeSelect.value;
   soundEnabled = true;
   audioPaused = false;
-  localStorage.setItem(MUSIC_MODE_KEY, musicMode);
-  localStorage.setItem(SOUND_KEY, "true");
-  localStorage.setItem(MUSIC_PAUSED_KEY, "false");
+  safeSet(MUSIC_MODE_KEY, musicMode);
+  safeSet(SOUND_KEY, "true");
+  safeSet(MUSIC_PAUSED_KEY, "false");
   updateMusicControls();
   updateTrackTitle();
   updateSoundButton();
@@ -1259,7 +1247,7 @@ musicModeSelect.addEventListener("change", () => {
 
 playlistTrackSelect.addEventListener("change", () => {
   playlistTrack = playlistTrackSelect.value;
-  localStorage.setItem(PLAYLIST_TRACK_KEY, playlistTrack);
+  safeSet(PLAYLIST_TRACK_KEY, playlistTrack);
   updateTrackTitle();
   setMusicSource({ startPlayback: soundEnabled && !audioPaused });
 });
