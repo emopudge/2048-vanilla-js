@@ -82,6 +82,10 @@ html {
   background: linear-gradient(135deg, rgba(255, 105, 180, 0.82), rgba(255, 199, 235, 0.62));
 }
 
+.theme-backdrop.theme-the-nice-guys {
+  background: linear-gradient(135deg, rgba(83, 61, 35, 0.86), rgba(217, 163, 74, 0.68));
+}
+
 button,
 input {
   font: inherit;

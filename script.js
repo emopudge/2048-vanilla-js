@@ -75,6 +75,7 @@ const themes = [
   { title: "Место под соснами", threshold: 256, className: "theme-place-beyond-the-pines", audio: "assets/audio/the-place-beyond-the-pines.mp3" },
   { title: "Первый человек", threshold: 512, className: "theme-first-man", audio: "assets/audio/first-man.mp3" },
   { title: "Барби", threshold: 1024, className: "theme-barbie", audio: "assets/audio/barbie.mp3" },
+  { title: "Славные парни", threshold: 2048, className: "theme-the-nice-guys", audio: "assets/audio/the-nice-guys.mp3" },
 ];
 
 const tileThemeImages = {
@@ -88,7 +89,8 @@ const tileThemeImages = {
   256: "assets/images/the-place-beyond-the-pines.jpg",
   512: "assets/images/first-man.jpg",
   1024: "assets/images/barbie.jpg",
-  2048: "assets/images/barbie.jpg",
+  2048: "assets/images/the-nice-guys.jpg",
+  4096: "assets/images/the-nice-guys.jpg",
 };
 
 Object.values(tileThemeImages).forEach((imageSource) => {
@@ -110,6 +112,7 @@ const playlistTracks = {
   "the-place-beyond-the-pines": "assets/audio/the-place-beyond-the-pines.mp3",
   "first-man": "assets/audio/first-man.mp3",
   barbie: "assets/audio/barbie.mp3",
+  "the-nice-guys": "assets/audio/the-nice-guys.mp3",
 };
 
 const trackTitles = {
@@ -121,6 +124,7 @@ const trackTitles = {
   "the-place-beyond-the-pines": "Место под соснами",
   "first-man": "Первый человек",
   barbie: "Барби",
+  "the-nice-guys": "Славные парни",
 };
 
 const tileColors = {
@@ -135,6 +139,7 @@ const tileColors = {
   512: ["#edc850", "#f9f6f2"],
   1024: ["#edc53f", "#f9f6f2"],
   2048: ["#edc22e", "#f9f6f2"],
+  4096: ["#d2a44a", "#f9f6f2"],
 };
 
 function createEmptyBoard() {
@@ -254,6 +259,7 @@ function getBackdropGradient(themeClass) {
     "theme-place-beyond-the-pines": "linear-gradient(135deg, rgba(15,36,30,.92), rgba(154,122,73,.68))",
     "theme-first-man": "linear-gradient(135deg, rgba(7,10,15,.94), rgba(86,98,111,.72))",
     "theme-barbie": "linear-gradient(135deg, rgba(255,105,180,.82), rgba(255,199,235,.62))",
+    "theme-the-nice-guys": "linear-gradient(135deg, rgba(83,61,35,.86), rgba(217,163,74,.68))",
   };
 
   return gradients[themeClass] || gradients["theme-la-la-land"];
