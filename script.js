@@ -809,51 +809,56 @@ function renderBoard(previousBoard = null, direction = null, newlyDiscoveredValu
   undoButton.disabled = previousState === null || gameOver;
 
   if (previousBoard) {
+    if (previousLayer) {
+      previousLayer.style.visibility = "hidden";
+    }
+
+    tileLayer.querySelectorAll(".tile[data-source-row]").forEach((duplicate) => {
+      duplicate.classList.add("tile-moving");
+    });
+
     requestAnimationFrame(() => {
       void tileLayer.offsetWidth;
 
-      requestAnimationFrame(() => {
-        if (previousLayer) {
-          previousLayer.style.visibility = "hidden";
-        }
+      tileLayer.querySelectorAll(".tile[data-source-row]").forEach((duplicate) => {
+        duplicate.style.setProperty("--row", duplicate.dataset.row);
+        duplicate.style.setProperty("--column", duplicate.dataset.column);
+      });
 
-        tileLayer.querySelectorAll(".tile[data-source-row]").forEach((duplicate) => {
-          duplicate.style.setProperty("--row", duplicate.dataset.row);
-          duplicate.style.setProperty("--column", duplicate.dataset.column);
-          duplicate.addEventListener("transitionend", () => duplicate.remove(), { once: true });
-          window.setTimeout(() => duplicate.remove(), TILE_ANIMATION_MS);
-        });
+      snapshotBoard.forEach((row, rowIndex) => {
+        row.forEach((value, columnIndex) => {
+          if (value) {
+            const tile = tileLayer.querySelector(
+              `.tile[data-row="${rowIndex}"][data-column="${columnIndex}"]`
+            );
 
-        snapshotBoard.forEach((row, rowIndex) => {
-          row.forEach((value, columnIndex) => {
-            if (value) {
-              const tile = tileLayer.querySelector(
-                `.tile[data-row="${rowIndex}"][data-column="${columnIndex}"]`
-              );
-
-              if (tile) {
-                tile.style.setProperty("--row", rowIndex);
-                tile.style.setProperty("--column", columnIndex);
-                if (tile.dataset.mergeTarget === "true") {
-                  const mergedValue = Number(tile.dataset.mergeValue);
-                  tile.textContent = String(mergedValue);
-                  tile.dataset.value = String(mergedValue);
-                  tile.setAttribute("aria-label", `Плитка ${mergedValue}`);
-                  applyTileImage(tile, mergedValue);
-                }
-                window.setTimeout(() => {
-                  tile.classList.remove("tile-moving");
-                  tile.classList.remove("tile-merging");
-                }, TILE_ANIMATION_MS);
+            if (tile) {
+              tile.style.setProperty("--row", rowIndex);
+              tile.style.setProperty("--column", columnIndex);
+              if (tile.dataset.mergeTarget === "true") {
+                const mergedValue = Number(tile.dataset.mergeValue);
+                tile.textContent = String(mergedValue);
+                tile.dataset.value = String(mergedValue);
+                tile.setAttribute("aria-label", `Плитка ${mergedValue}`);
+                applyTileImage(tile, mergedValue);
               }
             }
-          });
+          }
         });
       });
 
-      if (previousLayer) {
-        window.setTimeout(() => previousLayer.remove(), TILE_ANIMATION_MS);
-      }
+      window.setTimeout(() => {
+        tileLayer.querySelectorAll(".tile[data-source-row]").forEach((duplicate) => {
+          duplicate.remove();
+        });
+        tileLayer.querySelectorAll(".tile-moving").forEach((tile) => {
+          tile.classList.remove("tile-moving");
+          tile.classList.remove("tile-merging");
+        });
+        if (previousLayer) {
+          previousLayer.remove();
+        }
+      }, TILE_ANIMATION_MS);
     });
   }
 }
